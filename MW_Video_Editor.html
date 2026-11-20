@@ -416,7 +416,7 @@
       </div>
 
       <div class="topbar-group">
-        <button id="btnLicenseStatus" class="lic-pill" title="Trial & Lifetime Activation">⏳ <span id="lblLicStatus">30d Trial</span></button>
+        <button id="btnLicenseStatus" class="lic-pill" title="Trial & Lifetime Activation">⏳ <span id="lblLicStatus">7d Trial</span></button>
         <button id="btnCreatorContact" class="creator-badge" title="Copy 01117396210">
           <span data-i18n="madeBy">Made by Mahmoud Abdelhay</span>
           <span>•</span>
@@ -448,7 +448,7 @@
       <aside class="left-drawer">
         <div class="drawer-header">
           <span id="drawerTitle" class="drawer-title">Media</span>
-          <span style="font-size:11px;color:var(--text-muted);font-weight:600;">MW Studio</span>
+          <span style="font-size:11px;color:var(--text-muted);font-weight:600;">MW Studio v1.1</span>
         </div>
         <div class="drawer-body">
 
@@ -1038,6 +1038,10 @@
         <span data-i18n="exportDur">Total Duration</span>
         <strong id="lblExportDur">0.0s</strong>
       </div>
+      <div id="exportWatermarkNotice" class="hidden" style="padding:8px 10px;border-radius:8px;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.45);font-size:11.5px;color:#b45309;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span id="lblWatermarkNotice">⚠️ Trial Mode: Exported video will include a watermark.</span>
+        <button id="btnRemoveWmActivate" type="button" class="chip-btn" style="background:var(--amber);color:#fff;border:none;white-space:nowrap;">🔑 Activate</button>
+      </div>
       <div id="exportProgWrap" class="hidden" style="display:flex;flex-direction:column;gap:6px;">
         <div class="progress-track"><div id="exportProgBar" class="progress-fill"></div></div>
         <div id="exportProgText" style="text-align:center;font-size:11.5px;font-weight:700;color:var(--cyan-dark);">0%</div>
@@ -1047,7 +1051,7 @@
     </div>
   </div>
 
-  <!-- LICENSE / 30-DAY TRIAL & LIFETIME ACTIVATION MODAL -->
+  <!-- LICENSE / 7-DAY TRIAL & LIFETIME ACTIVATION MODAL -->
   <div id="licenseModal" class="lic-lock-backdrop hidden">
     <div class="modal-box" style="max-width:460px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -2571,6 +2575,48 @@
           }
           ctx.restore();
         }
+      }
+
+      // Trial Mode Watermark (applied automatically during Export until Lifetime License is activated)
+      if (isExporting && typeof getLicenseState === 'function' && !getLicenseState().activated) {
+        ctx.save();
+        // Faint diagonal center watermark (cannot be cropped out)
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate(-Math.PI / 7);
+        const diagSize = Math.max(24, Math.round(Math.min(w, h) * 0.068));
+        ctx.font = `800 ${diagSize}px "Montserrat", "Cairo", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.24)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
+        ctx.lineWidth = 3;
+        ctx.strokeText('MW VIDEO EDITOR • TRIAL', 0, 0);
+        ctx.fillText('MW VIDEO EDITOR • TRIAL', 0, 0);
+        ctx.restore();
+
+        // Crisp corner watermark pill (bottom-right)
+        ctx.save();
+        const pad = Math.max(14, Math.round(w * 0.02));
+        const pillFont = Math.max(14, Math.round(Math.min(w, h) * 0.028));
+        ctx.font = `700 ${pillFont}px "Montserrat", "Cairo", sans-serif`;
+        const wmText = 'Made with MW Video Editor';
+        const tw = ctx.measureText(wmText).width;
+        const bw = tw + pillFont * 1.4;
+        const bh = pillFont * 1.85;
+        const bx = w - bw - pad;
+        const by = h - bh - pad;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.68)';
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 8);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 196, 214, 0.75)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(wmText, bx + bw / 2, by + bh / 2 + 1);
+        ctx.restore();
       }
     }
 
@@ -4194,9 +4240,29 @@
 
       // Export
       document.getElementById('btnOpenExport').addEventListener('click', () => {
+        const lic = typeof getLicenseState === 'function' ? getLicenseState() : { activated: false, expired: false };
+        if (lic.expired) { updateLicenseUI(true); return; }
         document.getElementById('lblExportDur').textContent = `${getTotalDuration().toFixed(1)}s`;
         document.getElementById('exportProgWrap').classList.add('hidden');
+        const wmBox = document.getElementById('exportWatermarkNotice');
+        const wmLbl = document.getElementById('lblWatermarkNotice');
+        const wmBtn = document.getElementById('btnRemoveWmActivate');
+        if (wmBox) {
+          if (lic.activated) {
+            wmBox.classList.add('hidden');
+          } else {
+            wmBox.classList.remove('hidden');
+            if (wmLbl) wmLbl.textContent = state.lang === 'ar'
+              ? '⚠️ النسخة التجريبية: سيظهر لوجو التطبيق كعلامة مائية على الفيديو المصدّر.'
+              : '⚠️ Trial Mode: Exported video will include a watermark.';
+            if (wmBtn) wmBtn.textContent = state.lang === 'ar' ? '🔑 إزالة العلامة' : '🔑 Remove';
+          }
+        }
         document.getElementById('exportModal').classList.remove('hidden');
+      });
+      document.getElementById('btnRemoveWmActivate')?.addEventListener('click', () => {
+        document.getElementById('exportModal').classList.add('hidden');
+        updateLicenseUI(true);
       });
       document.getElementById('btnCloseExport').addEventListener('click', () => document.getElementById('exportModal').classList.add('hidden'));
       document.getElementById('btnStartExport').addEventListener('click', startExport);
@@ -4625,9 +4691,9 @@
 
 
     // =========================================
-    // 14. 30-DAY FREE TRIAL & DEVICE-LOCKED LIFETIME LICENSE ENGINE
+    // 14. 7-DAY FREE TRIAL & DEVICE-LOCKED LIFETIME LICENSE ENGINE
     // =========================================
-    const TRIAL_DAYS = 30;
+    const TRIAL_DAYS = 7;
     const MW_SECRET_SALT = 'MW-MAHMOUD-ABDELHAY-2026-PRO-V9';
 
     function mwHashHex(str) {
@@ -4690,8 +4756,8 @@
         lbl.textContent = state.lang === 'ar' ? 'انتهت التجربة' : 'Trial Expired';
         pill.firstChild.textContent = '🔒 ';
         banner.innerHTML = state.lang === 'ar'
-          ? '<strong>🔒 انتهت فترة التجربة المجانية (30 يوماً).</strong> أدخل كود التفعيل مدى الحياة للاستمرار.'
-          : '<strong>🔒 Your 30-Day Free Trial has ended.</strong> Enter your Lifetime Activation Code to continue.';
+          ? '<strong>🔒 انتهت فترة التجربة المجانية (7 أيام).</strong> أدخل كود التفعيل مدى الحياة للاستمرار.'
+          : '<strong>🔒 Your 7-Day Free Trial has ended.</strong> Enter your Lifetime Activation Code to continue.';
         actForm.classList.remove('hidden');
         closeBtn.classList.add('hidden');
         modal.classList.remove('hidden');
@@ -4700,8 +4766,8 @@
         lbl.textContent = state.lang === 'ar' ? `تجربة: ${lic.daysLeft} يوم` : `Trial: ${lic.daysLeft}d left`;
         pill.firstChild.textContent = '⏳ ';
         banner.innerHTML = state.lang === 'ar'
-          ? `<strong>⏳ تجربة مجانية نشطة — متبقي ${lic.daysLeft} يوماً من أصل 30 يوماً.</strong> أدخل كود التفعيل أدناه للتفعيل مدى الحياة.`
-          : `<strong>⏳ Free Trial Active — ${lic.daysLeft} of 30 days remaining.</strong> Enter your activation code below for Lifetime access.`;
+          ? `<strong>⏳ تجربة مجانية نشطة — متبقي ${lic.daysLeft} يوماً من أصل 7 أيام.</strong> أدخل كود التفعيل أدناه للتفعيل مدى الحياة.`
+          : `<strong>⏳ Free Trial Active — ${lic.daysLeft} of 7 days remaining.</strong> Enter your activation code below for Lifetime access.`;
         actForm.classList.remove('hidden');
         closeBtn.classList.remove('hidden');
       }

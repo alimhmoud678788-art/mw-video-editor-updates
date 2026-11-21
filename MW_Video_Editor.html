@@ -331,15 +331,22 @@
     .tl-timecode strong { color: var(--text-primary); }
 
     .tl-scroll { flex: 1; overflow-x: auto; overflow-y: auto; position: relative; background: var(--bg-main); padding: 6px 12px 10px; }
-    .tl-inner { position: relative; min-width: 900px; padding-left: 84px; }
+    .tl-inner { position: relative; min-width: 100%; padding-left: 84px; }
     .tl-ruler { height: 24px; position: relative; border-bottom: 1px solid var(--border); margin-bottom: 8px; cursor: pointer; }
     .ruler-tick { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-strong); padding-left: 4px; font-size: 10px; font-family: monospace; color: var(--text-muted); }
-    .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #111827; z-index: 30; pointer-events: none; }
+    .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #111827; z-index: 35; pointer-events: none; }
     body.dark-theme .playhead { background: var(--cyan); }
-    .playhead::before {
-      content: ''; position: absolute; top: -2px; left: -5px; width: 12px; height: 12px;
-      background: var(--cyan); border-radius: 3px; transform: rotate(45deg);
+    .playhead-handle {
+      position: absolute; top: -4px; left: -9px; width: 20px; height: 22px;
+      cursor: ew-resize; pointer-events: auto; display: flex; align-items: flex-start; justify-content: center;
+      z-index: 40;
     }
+    .playhead-handle::before {
+      content: ''; width: 14px; height: 14px; margin-top: 2px;
+      background: var(--cyan); border: 2px solid #fff; border-radius: 3px; transform: rotate(45deg);
+      box-shadow: 0 2px 6px rgba(0, 196, 214, 0.55); transition: transform 0.1s ease;
+    }
+    .playhead-handle:hover::before { transform: rotate(45deg) scale(1.18); }
 
     .track-row { position: relative; margin-bottom: 6px; display: flex; align-items: center; }
     .track-label {
@@ -487,7 +494,7 @@
       <aside class="left-drawer">
         <div class="drawer-header">
           <span id="drawerTitle" class="drawer-title">Media</span>
-          <span style="font-size:11px;color:var(--text-muted);font-weight:600;">MW Studio</span>
+          <span style="font-size:11px;color:var(--cyan-dark);font-weight:700;">MW Studio V5.8</span>
         </div>
         <div class="drawer-body">
 
@@ -872,9 +879,10 @@
                 <div class="field-label"><span data-i18n="animSpeed">Motion Speed</span><span id="lblAnimSpeed" class="field-val">1.0x</span></div>
                 <input id="rngAnimSpeed" type="range" min="0.3" max="3.0" step="0.1" value="1.0" />
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <button id="btnStretchTextFull" class="btn-secondary" style="font-size:11px;padding:6px;" data-i18n="stretchFullVid">↔ Full Video</button>
-                <button id="btnAlignTextClip" class="btn-secondary" style="font-size:11px;padding:6px;" data-i18n="alignToClip">🎯 Current Clip</button>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+                <button id="btnMoveTextStart" class="btn-secondary" style="font-size:10.5px;padding:6px 4px;" data-i18n="moveStartBtn">⏮ Start 0s</button>
+                <button id="btnStretchTextFull" class="btn-secondary" style="font-size:10.5px;padding:6px 4px;" data-i18n="stretchFullVid">↔ Full Video</button>
+                <button id="btnAlignTextClip" class="btn-secondary" style="font-size:10.5px;padding:6px 4px;" data-i18n="alignToClip">🎯 Current Clip</button>
               </div>
               <button id="btnApplyCapStyleAll" class="btn-primary" data-i18n="applyAllCaps">✨ Apply Style to All Captions</button>
             </div>
@@ -882,9 +890,10 @@
             <div id="logoBasicFields" class="hidden" style="display:flex;flex-direction:column;gap:9px;">
               <div style="font-weight:700;font-size:12px;color:var(--cyan-dark);" data-i18n="logoSettings">📌 Frame / Logo Overlay Settings</div>
               <button id="btnPickFramePhoto" class="btn-primary">📷 <span data-i18n="pickFramePhoto">Choose / Replace Photo Inside Frame</span></button>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <button id="btnStretchLogoFull" class="btn-secondary" style="font-size:11px;padding:6px;" data-i18n="stretchFullVid">↔ Full Video</button>
-                <button id="btnAlignLogoClip" class="btn-secondary" style="font-size:11px;padding:6px;" data-i18n="alignToClip">🎯 Current Clip</button>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+                <button id="btnMoveLogoStart" class="btn-secondary" style="font-size:10.5px;padding:6px 4px;" data-i18n="moveStartBtn">⏮ Start 0s</button>
+                <button id="btnStretchLogoFull" class="btn-secondary" style="font-size:10.5px;padding:6px 4px;" data-i18n="stretchFullVid">↔ Full Video</button>
+                <button id="btnAlignLogoClip" class="btn-secondary" style="font-size:10.5px;padding:6px 4px;" data-i18n="alignToClip">🎯 Current Clip</button>
               </div>
               <div style="background:var(--cyan-soft);border:1px solid rgba(0,196,214,0.3);border-radius:9px;padding:7px;display:flex;flex-direction:column;gap:6px;">
                 <div style="font-weight:700;font-size:11.5px;color:var(--cyan-dark);" data-i18n="splitScreenTitle">📐 Split-Screen & Free Size</div>
@@ -1070,25 +1079,29 @@
         </div>
 
         <div class="topbar-group">
-          <button id="btnSkipStart" class="icon-btn" title="Go to Start">⏮</button>
+          <button id="btnSkipStart" class="icon-btn" title="بداية الفيديو / Go to Start">⏮</button>
+          <button id="btnStepBack" class="icon-btn" title="رجوع ثانية / Step Back 1s" style="font-size:11px;padding:0 6px;">⏪ -1s</button>
           <button id="btnPlayPause" class="icon-btn active" style="padding:0 14px;" title="Play / Pause (Space)">
             <span id="playIcon">▶</span>
           </button>
+          <button id="btnStepFwd" class="icon-btn" title="تقديم ثانية / Step Forward 1s" style="font-size:11px;padding:0 6px;">+1s ⏩</button>
+          <button id="btnSkipEnd" class="icon-btn" title="نهاية الفيديو / Go to End">⏭</button>
           <span id="lblTimecode" class="tl-timecode"><strong>00:00:00</strong> | 00:00:00</span>
         </div>
 
         <div class="topbar-group">
+          <button id="btnFitTimeline" class="icon-btn active" title="ملاءمة كل الفيديوهات في إطار الشاشة / Fit All to Screen">⊡ <span data-i18n="fitScreenBtn">Fit Screen</span></button>
           <button id="btnSnapToggle" class="icon-btn active" title="Magnetic Snap to Audio & Beats">🧲 <span data-i18n="snap">Snap</span></button>
-          <span style="font-size:11px;color:var(--text-muted);">−</span>
-          <input id="rngZoom" type="range" min="35" max="150" value="75" style="width:90px;" />
-          <span style="font-size:11px;color:var(--text-muted);">+</span>
+          <button id="btnZoomOut" class="icon-btn" title="تصغير الشريط / Zoom Out" style="min-width:26px;padding:0 5px;">−</button>
+          <input id="rngZoom" type="range" min="0.25" max="120" step="0.25" value="12" style="width:82px;" title="تكبير/تصغير الشريط يدوياً" />
+          <button id="btnZoomIn" class="icon-btn" title="تكبير الشريط / Zoom In" style="min-width:26px;padding:0 5px;">+</button>
         </div>
       </div>
 
       <div dir="ltr" id="tlScroll" class="tl-scroll">
         <div id="tlInner" class="tl-inner">
           <div id="tlRuler" class="tl-ruler"></div>
-          <div id="playhead" class="playhead" style="left:84px;"></div>
+          <div id="playhead" class="playhead" style="left:84px;"><div id="playheadHandle" class="playhead-handle" title="اسحب السهم يدوياً / Drag playhead manually"></div></div>
 
           <div class="track-row">
             <div class="track-label" data-i18n="trackLogo">Logo / Img</div>
@@ -1127,8 +1140,8 @@
         <div class="field-group">
           <span class="field-label" data-i18n="expResLbl">Resolution</span>
           <select id="selExportRes" class="select-input">
-            <option value="720" selected>720p HD (Fast & Smooth)</option>
-            <option value="1080">1080p Full HD</option>
+            <option value="1080" selected>1080p Full HD (جودة عالية — موصى به)</option>
+            <option value="720">720p HD (أسرع للأجهزة الضعيفة)</option>
           </select>
         </div>
         <div class="field-group">
@@ -1233,7 +1246,7 @@
         dragTrim: 'Drag: Trim', dragStretch: 'Drag: Stretch Speed', langSwitch: 'العربية',
         toastAdded: 'Added to timeline', toastUndo: 'Undone', toastRedo: 'Redone',
         toastSplit: 'Clip split at playhead', toastSplitErr: 'Place playhead inside the selected clip to split',
-        toastSynced: 'Synced with audio!', toastNoAudio: 'Add an audio track first', toastExported: 'Video exported & downloaded!', toastMuted: 'Video audio muted', toastUnmuted: 'Video audio enabled', toastDetached: 'Audio separated to Audio track!', toastReordered: 'Clip order updated', toastPhoneCopied: 'Phone copied: 01117396210', saveProjShort: 'Save', openProjShort: 'Open', addPipVideo: 'Add Video Overlay (PiP)', recordVoiceover: 'Record Voiceover', stopVoiceover: 'Stop Recording...', freezeFrame: 'Freeze Frame', reverseClip: 'Reverse', rotate: 'Rotate', flipH: '⇄ Flip H', flipV: '⇅ Flip V', cropTitle: '✂️ Crop Video', resetCrop: 'Reset', cropTop: 'Top', cropBot: 'Bottom', cropLeft: 'Left', cropRight: 'Right', kfTitle: '◆ Keyframes', addKfBtn: 'Add Keyframe', clearKfBtn: 'Clear', vidChromaTitle: '🟩 Video Chroma Key', chromaOff: 'Off', chromaGreen: 'Green', chromaBlue: 'Blue', chromaBlack: 'Black', fadeInLbl: 'Fade In', fadeOutLbl: 'Fade Out', voiceFxLbl: 'Voice Changer', expResLbl: 'Resolution', expFpsLbl: 'Frame Rate', voAddTextBtn: 'Add Spoken Text to Video', historyBtn: 'History', historyTitle: '📜 Projects History', historyDesc: 'Your projects are auto-saved inside the app. Click any project to continue editing anytime:', newProjectBtn: 'New Empty Project', logoRotate: 'Rotate / Flip (or drag handle)', shapeDiamond: 'Diamond', shapeOval: 'Oval', shapeOctagon: 'Octagon', shapeTriangle: 'Triangle', shapeArch: 'Arch', shapeShield: 'Shield', shapeCapsule: 'Capsule', shapeFlower: 'Flower', splitScreenTitle: '📐 Split-Screen & Free Size', splitFull: '⬜ Full', splitLeft: '◧ Left', splitRight: '◨ Right', splitTop: '⬒ Top', splitBottom: '⬓ Bottom', widthLbl: 'Width', heightLbl: 'Height', posXShort: 'Pos X', posYShort: 'Pos Y', alignToClip: '🎯 Current Clip'
+        toastSynced: 'Synced with audio!', toastNoAudio: 'Add an audio track first', toastExported: 'Video exported & downloaded!', toastMuted: 'Video audio muted', toastUnmuted: 'Video audio enabled', toastDetached: 'Audio separated to Audio track!', toastReordered: 'Clip order updated', toastPhoneCopied: 'Phone copied: 01117396210', saveProjShort: 'Save', openProjShort: 'Open', addPipVideo: 'Add Video Overlay (PiP)', recordVoiceover: 'Record Voiceover', stopVoiceover: 'Stop Recording...', freezeFrame: 'Freeze Frame', reverseClip: 'Reverse', rotate: 'Rotate', flipH: '⇄ Flip H', flipV: '⇅ Flip V', cropTitle: '✂️ Crop Video', resetCrop: 'Reset', cropTop: 'Top', cropBot: 'Bottom', cropLeft: 'Left', cropRight: 'Right', kfTitle: '◆ Keyframes', addKfBtn: 'Add Keyframe', clearKfBtn: 'Clear', vidChromaTitle: '🟩 Video Chroma Key', chromaOff: 'Off', chromaGreen: 'Green', chromaBlue: 'Blue', chromaBlack: 'Black', fadeInLbl: 'Fade In', fadeOutLbl: 'Fade Out', voiceFxLbl: 'Voice Changer', expResLbl: 'Resolution', expFpsLbl: 'Frame Rate', voAddTextBtn: 'Add Spoken Text to Video', historyBtn: 'History', historyTitle: '📜 Projects History', historyDesc: 'Your projects are auto-saved inside the app. Click any project to continue editing anytime:', newProjectBtn: 'New Empty Project', logoRotate: 'Rotate / Flip (or drag handle)', shapeDiamond: 'Diamond', shapeOval: 'Oval', shapeOctagon: 'Octagon', shapeTriangle: 'Triangle', shapeArch: 'Arch', shapeShield: 'Shield', shapeCapsule: 'Capsule', shapeFlower: 'Flower', splitScreenTitle: '📐 Split-Screen & Free Size', splitFull: '⬜ Full', splitLeft: '◧ Left', splitRight: '◨ Right', splitTop: '⬒ Top', splitBottom: '⬓ Bottom', widthLbl: 'Width', heightLbl: 'Height', posXShort: 'Pos X', posYShort: 'Pos Y', alignToClip: '🎯 Current Clip', fitScreenBtn: 'Fit Screen', moveStartBtn: '⏮ Start 0s'
       },
       ar: {
         madeBy: 'صُنع بواسطة محمود عبد الحي', undo: 'تراجع', redo: 'إعادة', export: 'تصدير', addLogoInVideo: 'إضافة لوجو / صورة داخل الفيديو', pipBtn: 'كلوجو', autoCapTitle: '🎤 تحويل الصوت لكابشن تلقائي', startAutoCap: 'بدء الكابشن التلقائي', stopAutoCap: 'إيقاف الاستماع', smartSlots: '⚡ كشف توقيت الكلام تلقائياً من الصوت', whisperTitle: '🤖 تفريغ ذكي مباشر من الفيديو (Whisper AI)', whisperBtn: 'تحويل صوت الفيديو لكابشن تلقائياً', quickStyles: 'ستايلات كابشن جاهزة', colText: 'لون الكلام', colBg: 'لون الخلفية', colStroke: 'لون الحدود', positionQuick: 'مكان الكابشن (أو اسحبه على الفيديو)', posTop: 'فوق', posMid: 'المنتصف', posBot: 'أسفل', applyAllCaps: '✨ تطبيق التنسيق على كل الكابشن', logoFrameTitle: '🖼️ الإطار والشكل', framesTab: 'إطارات (16)', stickersTab: 'ملصقات (32)', framesDesc: 'اختر شكل الإطار، ثم اضغط عليه لإضافة صورتك أو اللوجو بداخله فوراً:', pickFramePhoto: 'إضافة / تغيير الصورة داخل الإطار', stretchFullVid: '↔ مدّه على طول الفيديو بالكامل', animSpeed: 'سرعة الحركة', shapeRect: 'مستطيل', shapeSquare: 'مربع', shapeRound: 'حواف ناعمة', shapeCircle: 'دائري', shapePolaroid: 'بولارويد', shapeHex: 'سداسي', shapeStar: 'نجمة', shapeHeart: 'قلب', frameWidth: 'سُمك الإطار', frameColor: 'لون الإطار', bgRemoveTitle: '✂️ إزالة خلفية الصورة / اللوجو', bgRmAuto: 'إزالة تلقائية', bgRmWhite: 'إزالة الأبيض', bgRmBlack: 'إزالة الأسود', bgRmGreen: 'كروما أخضر', bgRmReset: 'الأصلية', bgTolerance: 'حساسية العزل', logoSettings: '📌 إعدادات اللوجو داخل الفيديو', logoSize: 'حجم اللوجو', posX: 'الموضع الأفقي X', cornerTR: 'أعلى اليمين', cornerTL: 'أعلى اليسار', cornerBR: 'أسفل اليمين', cornerBL: 'أسفل اليسار', cornerCC: 'المنتصف', applyBtn: 'تطبيق', musicTracks: 'موسيقى (16)', sfxTracks: 'مؤثرات صوتية (14)', stockVidTab: 'فيديو جاهز (20)', bgsTab: 'خلفيات (12)', avatarsTab: 'أفاتار حقيقي (4)', stockVidDesc: 'مقدمات، عد تنازلي 3-2-1، شاشة ألوان التلفزيون ومشاهد متحركة:', avatarsDesc: 'اضغط على أي شخصية أفاتار متحركة لإضافتها داخل الفيديو:', capModeAuto: 'كابشن تلقائي', capModeManual: 'يدوي / نص', capModeUpload: 'رفع ملف SRT', capModeLyrics: 'كلمات أغنية', manualCapHint: 'اكتب نص الكابشن وأضفه عند موضع المؤشر:', uploadSrtTitle: 'رفع ملف ترجمة (.SRT / .VTT / .TXT)', uploadSrtHint: 'يستورد الجمل بتوقيتاتها الدقيقة تلقائياً!', lyricsHint: 'الصق كلمات الأغنية (كل سطر في سطر) لمزامنتها تلقائياً مع الإيقاع:', genLyricsBtn: 'توليد كلمات الأغنية المتزامنة', editCapsList: 'تعديل الكابشن (اضغط على أي سطر للتعديل):', fxMotionTab: 'مؤثرات فيديو (20)', fxFiltersTab: 'فلاتر ألوان (20)', licModalTitle: '🔑 تفعيل تطبيق MW Video Editor', yourDeviceId: 'كود جهازك (أرسله للحصول على كود التفعيل — بحد أقصى جهازين)', copyBtn: 'نسخ', enterActCode: 'أدخل كود التفعيل مدى الحياة', activateBtn: 'تفعيل مدى الحياة الآن', licContactNote: 'للحصول على كود التفعيل مدى الحياة، تواصل مع محمود عبد الحي:',
@@ -1264,7 +1277,7 @@
         dragTrim: 'السحب: قص المدة', dragStretch: 'السحب: تغيير السرعة', langSwitch: 'English',
         toastAdded: 'تمت الإضافة للخط الزمني', toastUndo: 'تم التراجع خطوة', toastRedo: 'تمت الإعادة',
         toastSplit: 'تم تقطيع المقطع', toastSplitErr: 'ضع المؤشر داخل المقطع المحدد لتقطيعه',
-        toastSynced: 'تمت المزامنة مع الصوت بنجاح!', toastNoAudio: 'أضف مقطعاً صوتياً أولاً', toastExported: 'تم تصدير وتحميل الفيديو!', toastMuted: 'تم إلغاء صوت الفيديو الأصلي', toastUnmuted: 'تم تشغيل صوت الفيديو الأصلي', toastDetached: 'تم فصل صوت الفيديو في مسار الصوت بالأسفل!', toastReordered: 'تم تغيير ترتيب الفيديو', toastPhoneCopied: 'تم نسخ الرقم: 01117396210', saveProjShort: 'حفظ', openProjShort: 'فتح مشروع', addPipVideo: 'إضافة فيديو فوق فيديو (PiP)', recordVoiceover: 'تسجيل صوتي مباشر', stopVoiceover: 'إيقاف التسجيل...', freezeFrame: 'تجميد اللقطة', reverseClip: 'عكس الفيديو', rotate: 'تدوير', flipH: '⇄ قلب أفقي', flipV: '⇅ قلب رأسي', cropTitle: '✂️ قص الفيديو (Crop)', resetCrop: 'إعادة ضبط', cropTop: 'أعلى', cropBot: 'أسفل', cropLeft: 'يسار', cropRight: 'يمين', kfTitle: '◆ الإطارات المفتاحية (Keyframes)', addKfBtn: 'إضافة نقطة حركة', clearKfBtn: 'مسح', vidChromaTitle: '🟩 إزالة خلفية الفيديو (كروما)', chromaOff: 'إيقاف', chromaGreen: 'أخضر', chromaBlue: 'أزرق', chromaBlack: 'أسود', fadeInLbl: 'دخول تدريجي (Fade In)', fadeOutLbl: 'خروج تدريجي (Fade Out)', voiceFxLbl: 'مغيّر الصوت (Voice Changer)', expResLbl: 'الدقة', expFpsLbl: 'معدل الإطارات', voAddTextBtn: 'إضافة الكلام المكتوب للفيديو', historyBtn: 'السجل', historyTitle: '📜 سجل المشاريع المحفوظة', historyDesc: 'مشاريعك تُحفظ تلقائياً داخل التطبيق. اضغط على أي مشروع للعودة وتكملة التعديل في أي وقت:', newProjectBtn: 'مشروع جديد فارغ', logoRotate: 'تدوير / قلب اللوجو (أو اسحب من الفيديو)', shapeDiamond: 'معيّن', shapeOval: 'بيضاوي', shapeOctagon: 'ثماني', shapeTriangle: 'مثلث', shapeArch: 'قوس', shapeShield: 'درع', shapeCapsule: 'كبسولة', shapeFlower: 'وردة', splitScreenTitle: '📐 تقسيم الشاشة والمقارنة والحجم الحر', splitFull: '⬜ كامل', splitLeft: '◧ نصف يسار', splitRight: '◨ نصف يمين', splitTop: '⬒ نصف علوي', splitBottom: '⬓ نصف سفلي', widthLbl: 'العرض', heightLbl: 'الارتفاع', posXShort: 'أفقي X', posYShort: 'رأسي Y', alignToClip: '🎯 محاذاة للمقطع'
+        toastSynced: 'تمت المزامنة مع الصوت بنجاح!', toastNoAudio: 'أضف مقطعاً صوتياً أولاً', toastExported: 'تم تصدير وتحميل الفيديو!', toastMuted: 'تم إلغاء صوت الفيديو الأصلي', toastUnmuted: 'تم تشغيل صوت الفيديو الأصلي', toastDetached: 'تم فصل صوت الفيديو في مسار الصوت بالأسفل!', toastReordered: 'تم تغيير ترتيب الفيديو', toastPhoneCopied: 'تم نسخ الرقم: 01117396210', saveProjShort: 'حفظ', openProjShort: 'فتح مشروع', addPipVideo: 'إضافة فيديو فوق فيديو (PiP)', recordVoiceover: 'تسجيل صوتي مباشر', stopVoiceover: 'إيقاف التسجيل...', freezeFrame: 'تجميد اللقطة', reverseClip: 'عكس الفيديو', rotate: 'تدوير', flipH: '⇄ قلب أفقي', flipV: '⇅ قلب رأسي', cropTitle: '✂️ قص الفيديو (Crop)', resetCrop: 'إعادة ضبط', cropTop: 'أعلى', cropBot: 'أسفل', cropLeft: 'يسار', cropRight: 'يمين', kfTitle: '◆ الإطارات المفتاحية (Keyframes)', addKfBtn: 'إضافة نقطة حركة', clearKfBtn: 'مسح', vidChromaTitle: '🟩 إزالة خلفية الفيديو (كروما)', chromaOff: 'إيقاف', chromaGreen: 'أخضر', chromaBlue: 'أزرق', chromaBlack: 'أسود', fadeInLbl: 'دخول تدريجي (Fade In)', fadeOutLbl: 'خروج تدريجي (Fade Out)', voiceFxLbl: 'مغيّر الصوت (Voice Changer)', expResLbl: 'الدقة', expFpsLbl: 'معدل الإطارات', voAddTextBtn: 'إضافة الكلام المكتوب للفيديو', historyBtn: 'السجل', historyTitle: '📜 سجل المشاريع المحفوظة', historyDesc: 'مشاريعك تُحفظ تلقائياً داخل التطبيق. اضغط على أي مشروع للعودة وتكملة التعديل في أي وقت:', newProjectBtn: 'مشروع جديد فارغ', logoRotate: 'تدوير / قلب اللوجو (أو اسحب من الفيديو)', shapeDiamond: 'معيّن', shapeOval: 'بيضاوي', shapeOctagon: 'ثماني', shapeTriangle: 'مثلث', shapeArch: 'قوس', shapeShield: 'درع', shapeCapsule: 'كبسولة', shapeFlower: 'وردة', splitScreenTitle: '📐 تقسيم الشاشة والمقارنة والحجم الحر', splitFull: '⬜ كامل', splitLeft: '◧ نصف يسار', splitRight: '◨ نصف يمين', splitTop: '⬒ نصف علوي', splitBottom: '⬓ نصف سفلي', widthLbl: 'العرض', heightLbl: 'الارتفاع', posXShort: 'أفقي X', posYShort: 'رأسي Y', alignToClip: '🎯 محاذاة للمقطع', fitScreenBtn: 'في إطار الشاشة', moveStartBtn: '⏮ أول الفيديو'
       }
     };
 
@@ -1693,7 +1706,8 @@
       aspectRatio: '16:9',
       currentTime: 0,
       isPlaying: false,
-      zoom: 75,
+      zoom: 12,
+      autoFitTimeline: true,
       snapEnabled: true,
       resizeMode: 'trim',
       masterVol: 0.9,
@@ -2040,7 +2054,7 @@
         activeVideoClipId = null;
       }
 
-      // Sync PiP video overlays (SMOOTH: no per-frame seek jitter or flicker!)
+      // Sync PiP video overlays (TIGHT LIP-SYNC: rate-nudge for small drift, clean seek for large drift!)
       const nowPerf = performance.now();
       for (const ov of state.overlayClips) {
         if (ov.kind === 'video_overlay') {
@@ -2052,17 +2066,30 @@
           const rel = t - ov.start;
           const maxPvT = Math.max(0.05, (isFinite(pv.duration) && pv.duration > 0 ? pv.duration : ov.duration) - 0.05);
           const clampedRel = Math.min(Math.max(0, rel), maxPvT);
-          if (playing && rel >= 0 && rel < ov.duration) {
-            const drift = Math.abs((pv.currentTime || 0) - clampedRel);
-            const canResync = !pv.seeking && (!pv._lastSeekTs || (nowPerf - pv._lastSeekTs) > 1500);
-            if ((forceSeek && !pv.seeking) || (drift > 0.85 && canResync && rel < maxPvT)) {
+          if (playing && rel >= -0.02 && rel < ov.duration) {
+            const signedDrift = clampedRel - (pv.currentTime || 0);
+            const drift = Math.abs(signedDrift);
+            const canResync = !pv.seeking && (!pv._lastSeekTs || (nowPerf - pv._lastSeekTs) > 600);
+            if (forceSeek) {
               pv._lastSeekTs = nowPerf;
-              try { pv.currentTime = clampedRel; } catch (e) {}
+              try { pv.playbackRate = 1.0; pv.currentTime = clampedRel; } catch (e) {}
+            } else if (drift > 0.18 && canResync && rel < maxPvT) {
+              pv._lastSeekTs = nowPerf;
+              try { pv.playbackRate = 1.0; pv.currentTime = clampedRel; } catch (e) {}
+            } else if (!pv.seeking && drift > 0.045 && drift <= 0.18) {
+              // Gentle playbackRate nudge eliminates lip-sync drift with ZERO frame stutter
+              const targetRate = signedDrift > 0 ? 1.04 : 0.96;
+              if (Math.abs(pv.playbackRate - targetRate) > 0.005) {
+                try { pv.playbackRate = targetRate; } catch (e) {}
+              }
+            } else if (Math.abs(pv.playbackRate - 1.0) > 0.005) {
+              try { pv.playbackRate = 1.0; } catch (e) {}
             }
             if (pv.paused && rel < maxPvT) pv.play().catch(() => {});
           } else {
             if (!pv.paused) pv.pause();
-            if (rel >= 0 && rel <= ov.duration && !pv.seeking && Math.abs((pv.currentTime || 0) - clampedRel) > 0.1) {
+            if (Math.abs(pv.playbackRate - 1.0) > 0.005) { try { pv.playbackRate = 1.0; } catch (e) {} }
+            if (rel >= 0 && rel <= ov.duration && !pv.seeking && Math.abs((pv.currentTime || 0) - clampedRel) > 0.06) {
               try { pv.currentTime = clampedRel; } catch (e) {}
             }
           }
@@ -2080,13 +2107,32 @@
           applyVoiceFxToEl(aud, a.voiceFx || 'normal', 1.0);
           aud.muted = !!a.muted;
           aud.volume = Math.max(0, Math.min(1, (a.volume ?? 1) * fadeG * state.masterVol));
-          if (playing && rel >= 0 && rel < a.duration) {
-            if (forceSeek || Math.abs(aud.currentTime - rel) > 0.45) {
-              try { aud.currentTime = rel; } catch (e) {}
+          if (playing && rel >= -0.02 && rel < a.duration) {
+            const maxAudT = Math.max(0.05, (isFinite(aud.duration) && aud.duration > 0 ? aud.duration : a.duration) - 0.05);
+            const clampedAudRel = Math.min(Math.max(0, rel), maxAudT);
+            const signedDrift = clampedAudRel - (aud.currentTime || 0);
+            const drift = Math.abs(signedDrift);
+            const canAudResync = !aud.seeking && (!aud._lastSeekTs || (nowPerf - aud._lastSeekTs) > 500);
+            if (forceSeek) {
+              aud._lastSeekTs = nowPerf;
+              try { aud.playbackRate = 1.0; aud.currentTime = clampedAudRel; } catch (e) {}
+            } else if (drift > 0.16 && canAudResync && rel < maxAudT) {
+              aud._lastSeekTs = nowPerf;
+              try { aud.playbackRate = 1.0; aud.currentTime = clampedAudRel; } catch (e) {}
+            } else if (!aud.seeking && drift > 0.03 && drift <= 0.16) {
+              const targetRate = signedDrift > 0 ? 1.03 : 0.97;
+              if (Math.abs(aud.playbackRate - targetRate) > 0.004) {
+                try { aud.playbackRate = targetRate; } catch (e) {}
+              }
+            } else if (Math.abs(aud.playbackRate - 1.0) > 0.004 && (a.voiceFx || 'normal') === 'normal') {
+              try { aud.playbackRate = 1.0; } catch (e) {}
             }
-            if (aud.paused) aud.play().catch(() => {});
+            if (aud.paused && rel < maxAudT) aud.play().catch(() => {});
           } else {
             if (!aud.paused) aud.pause();
+            if (Math.abs(aud.playbackRate - 1.0) > 0.004 && (a.voiceFx || 'normal') === 'normal') {
+              try { aud.playbackRate = 1.0; } catch (e) {}
+            }
           }
         }
       }
@@ -2096,12 +2142,16 @@
     // 6. FAST GPU-FRIENDLY CANVAS COMPOSITOR (24 TRANSITIONS + FONTS)
     // =========================================
     const canvas = document.getElementById('previewCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     function updateCanvasSize() {
-      const map = { '16:9': [960, 540], '9:16': [450, 800], '1:1': [640, 640], '4:5': [560, 700] };
-      const [w, h] = map[state.aspectRatio] || [960, 540];
+      const map = { '16:9': [1280, 720], '9:16': [720, 1280], '1:1': [960, 960], '4:5': [768, 960] };
+      const [w, h] = map[state.aspectRatio] || [1280, 720];
       canvas.width = w; canvas.height = h;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       document.querySelectorAll('.ratio-chip').forEach(b => b.classList.toggle('active', b.dataset.ratio === state.aspectRatio));
       renderFrame(state.currentTime);
     }
@@ -2380,18 +2430,8 @@
             const kb = 1 + (localT / Math.max(0.5, clip.duration)) * 0.05;
             drawn = drawCover(reg.el, w, h, scale * kb, opts.ox || 0, opts.oy || 0, effRotRad, !!clip.flipH, !!clip.flipV, clip.crop, boxObj);
           } else if (clip.type === 'video') {
-            if (reg.el.readyState >= 2 && reg.el.videoWidth > 0) {
+            if (reg.el.readyState >= 1 && reg.el.videoWidth > 0) {
               drawn = drawCover(reg.el, w, h, scale, opts.ox || 0, opts.oy || 0, effRotRad, !!clip.flipH, !!clip.flipV, clip.crop, boxObj);
-              try {
-                if (!reg._lastFrameCv) reg._lastFrameCv = document.createElement('canvas');
-                if (reg._lastFrameCv.width !== reg.el.videoWidth || reg._lastFrameCv.height !== reg.el.videoHeight) {
-                  reg._lastFrameCv.width = reg.el.videoWidth;
-                  reg._lastFrameCv.height = reg.el.videoHeight;
-                }
-                reg._lastFrameCv.getContext('2d').drawImage(reg.el, 0, 0);
-              } catch (e) {}
-            } else if (reg._lastFrameCv && reg._lastFrameCv.width > 0) {
-              drawn = drawCover(reg._lastFrameCv, w, h, scale, opts.ox || 0, opts.oy || 0, effRotRad, !!clip.flipH, !!clip.flipV, clip.crop, boxObj);
             }
           }
         }
@@ -2486,6 +2526,8 @@
       }
       canvas.classList.remove('hidden'); emptyEl.classList.add('hidden');
 
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
 
@@ -2630,22 +2672,8 @@
             let imgSrc = null;
             if (ov.kind === 'video_overlay') {
               const preg = mediaRegistry.get(ov.assetId);
-              if (preg && preg.el) {
-                if (preg.el.readyState >= 2 && preg.el.videoWidth > 0) {
-                  imgSrc = preg.el;
-                  try {
-                    if (!ov._lastFrameCv) {
-                      ov._lastFrameCv = document.createElement('canvas');
-                    }
-                    if (ov._lastFrameCv.width !== preg.el.videoWidth || ov._lastFrameCv.height !== preg.el.videoHeight) {
-                      ov._lastFrameCv.width = preg.el.videoWidth;
-                      ov._lastFrameCv.height = preg.el.videoHeight;
-                    }
-                    ov._lastFrameCv.getContext('2d').drawImage(preg.el, 0, 0);
-                  } catch (e) {}
-                } else if (ov._lastFrameCv && ov._lastFrameCv.width > 0) {
-                  imgSrc = ov._lastFrameCv;
-                }
+              if (preg && preg.el && preg.el.readyState >= 1 && preg.el.videoWidth > 0) {
+                imgSrc = preg.el;
               }
             } else {
               imgSrc = getProcessedOverlayImage(ov);
@@ -2927,27 +2955,26 @@
       const dt = isExporting ? rawDt : Math.min(0.08, rawDt);
       lastTs = ts;
 
-      // Always lock timeline clock to the active playing <video> element (BOTH preview & export!)
-      // This guarantees export NEVER races ahead of video/audio and NEVER cuts off the last 2-3 seconds!
+      // Lock timeline clock DIRECTLY to the active playing <video> element for 0ms lip-sync & caption accuracy!
       const activeBefore = getActiveVideoClipAt(state.currentTime);
       let syncedToVid = false;
-      if (activeBefore && activeBefore.clip.type === 'video' && !activeBefore.clip.reversed && activeVideoClipId === activeBefore.clip.id) {
+      const inSeekGuard = !isExporting && (performance.now() < (window._playbackSeekGuardUntil || 0));
+      if (!inSeekGuard && activeBefore && activeBefore.clip.type === 'video' && !activeBefore.clip.reversed && activeVideoClipId === activeBefore.clip.id) {
         const reg = mediaRegistry.get(activeBefore.clip.assetId);
-        if (reg && reg.el && reg.el.readyState >= 2) {
+        if (reg && reg.el && reg.el.readyState >= 2 && !reg.el.seeking) {
           const clipEndSrc = activeBefore.clip.trimStart + activeBefore.clip.duration * activeBefore.clip.speed;
-          if (reg.el.ended || reg.el.currentTime >= clipEndSrc - 0.02) {
+          const vidT = activeBefore.start + (reg.el.currentTime - activeBefore.clip.trimStart) / activeBefore.clip.speed;
+          const jumpDiff = Math.abs(vidT - state.currentTime);
+          if ((reg.el.ended || reg.el.currentTime >= clipEndSrc - 0.02) && (state.currentTime >= activeBefore.start + activeBefore.clip.duration - 0.6)) {
             state.currentTime = activeBefore.start + activeBefore.clip.duration;
             syncedToVid = true;
-          } else if (!reg.el.paused) {
-            const vidT = activeBefore.start + (reg.el.currentTime - activeBefore.clip.trimStart) / activeBefore.clip.speed;
-            if (!isNaN(vidT) && vidT >= activeBefore.start - 0.05) {
-              state.currentTime = Math.max(state.currentTime, vidT);
-              syncedToVid = true;
-            }
-          } else if (isExporting) {
-            // Only wait up to 250ms for buffering, NEVER hang forever at 80%!
+          } else if (!reg.el.paused && !isNaN(vidT) && vidT >= activeBefore.start - 0.05 && jumpDiff < 0.75) {
+            // Exact lock to vidT (no forward drift!) so captions, lips, and audio match frame-for-frame
+            state.currentTime = Math.max(activeBefore.start, vidT);
+            syncedToVid = true;
+          } else if (isExporting && reg.el.paused) {
             if (!tick._stallStart) tick._stallStart = ts;
-            if (ts - tick._stallStart < 250) {
+            if (ts - tick._stallStart < 200) {
               syncedToVid = true;
             } else {
               tick._stallStart = 0;
@@ -2961,8 +2988,8 @@
       } else {
         state.currentTime += dt;
       }
-      // Hard wall-clock safety net during export so it NEVER stalls or hangs
-      if (isExporting && exportStartPerf > 0) {
+      // Hard wall-clock safety net during export ONLY if completely stalled
+      if (isExporting && exportStartPerf > 0 && !syncedToVid) {
         const wallElapsed = (performance.now() - exportStartPerf) / 1000;
         if (wallElapsed > state.currentTime + 1.5) {
           state.currentTime = Math.min(getTotalDuration(), wallElapsed);
@@ -3001,7 +3028,10 @@
       syncMediaPlayback(true, state.currentTime, false);
       renderFrame(state.currentTime);
       if (isExporting) {
-        if (!tick._lastProgTs || ts - tick._lastProgTs > 120) {
+        if (exportVideoTrack && typeof exportVideoTrack.requestFrame === 'function') {
+          try { exportVideoTrack.requestFrame(); } catch (e) {}
+        }
+        if (!tick._lastProgTs || ts - tick._lastProgTs > 220) {
           tick._lastProgTs = ts;
           const pct = Math.min(100, Math.round((state.currentTime / total) * 100));
           const remSec = Math.max(0, Math.ceil(total - state.currentTime));
@@ -3009,10 +3039,12 @@
           document.getElementById('exportProgText').textContent = state.lang === 'ar'
             ? `${fmtTC(state.currentTime)} / ${fmtTC(total)} (${pct}%) — متبقي ${remSec} ث`
             : `${fmtTC(state.currentTime)} / ${fmtTC(total)} (${pct}%) — ${remSec}s left`;
-          updatePlayheadUI();
         }
       } else {
-        updatePlayheadUI();
+        if (!tick._lastUiTs || ts - tick._lastUiTs > 33) {
+          tick._lastUiTs = ts;
+          updatePlayheadUI();
+        }
       }
       rafId = requestAnimationFrame(tick);
     }
@@ -3020,7 +3052,12 @@
     function startPlayback() {
       ensureAudioCtx();
       if (rafId) cancelAnimationFrame(rafId);
-      if (state.currentTime >= getTotalDuration() - 0.05) state.currentTime = 0;
+      if (state.currentTime >= getTotalDuration() - 0.08) {
+        state.currentTime = 0;
+        updatePlayheadUI();
+      }
+      activeVideoClipId = null;
+      window._playbackSeekGuardUntil = performance.now() + 450;
       state.isPlaying = true;
       lastTs = 0;
       lastBeatStep = -1;
@@ -3161,7 +3198,7 @@
       let targetIdx = state.videoClips.length;
       let indicatorX = 0;
       for (let i = 0; i < state.videoClips.length; i++) {
-        const w = Math.max(40, state.videoClips[i].duration * state.zoom);
+        const w = Math.max(8, state.videoClips[i].duration * state.zoom);
         if (relX < accX + w / 2) {
           targetIdx = i;
           indicatorX = accX;
@@ -3232,24 +3269,77 @@
       }
     });
 
+    function computeCompactZoom(totalDur) {
+      const scrollEl = document.getElementById('tlScroll');
+      const availW = Math.max(260, ((scrollEl && scrollEl.clientWidth) ? scrollEl.clientWidth : 880) - 116);
+      const dur = Math.max(2, totalDur || getTotalDuration());
+      // Fit the ENTIRE timeline cleanly inside 86% of visible screen width (works for 10s, 1m, 10m, or 60m videos!)
+      return Math.max(0.02, Math.min(28, Number(((availW * 0.86) / dur).toFixed(4))));
+    }
+
+    function fitTimelineToScreen() {
+      const scrollEl = document.getElementById('tlScroll');
+      if (!scrollEl) return;
+      state.autoFitTimeline = true;
+      const btnFit = document.getElementById('btnFitTimeline');
+      if (btnFit) btnFit.classList.add('active');
+      const targetZoom = computeCompactZoom(getTotalDuration());
+      state.zoom = targetZoom;
+      const rng = document.getElementById('rngZoom');
+      if (rng) rng.value = String(Math.max(0.25, targetZoom));
+      renderTimeline();
+      scrollEl.scrollLeft = 0;
+    }
+
     function renderTimeline() {
       const total = getTotalDuration();
-      const px = state.zoom;
-      document.getElementById('tlInner').style.width = `${Math.max(820, Math.ceil((total + 3) * px)) + 84}px`;
+      const scrollEl = document.getElementById('tlScroll');
+      if (state.autoFitTimeline && total > 0) {
+        const autoZ = computeCompactZoom(total);
+        if (Math.abs(state.zoom - autoZ) > 0.005) {
+          state.zoom = autoZ;
+          const rng = document.getElementById('rngZoom');
+          if (rng) rng.value = String(Math.max(0.25, autoZ));
+        }
+      }
+      const px = Math.max(0.02, state.zoom);
+      const tlInner = document.getElementById('tlInner');
+      if (state.autoFitTimeline) {
+        if (scrollEl) { scrollEl.style.overflowX = 'hidden'; scrollEl.scrollLeft = 0; }
+        tlInner.style.width = '100%';
+      } else {
+        if (scrollEl) scrollEl.style.overflowX = 'auto';
+        const minW = scrollEl ? Math.max(320, scrollEl.clientWidth - 28) : 640;
+        const contentW = Math.ceil((total + 1) * px) + 92;
+        tlInner.style.width = `${Math.max(minW, contentW)}px`;
+      }
 
       const ruler = document.getElementById('tlRuler');
       ruler.innerHTML = '';
-      for (let s = 0; s <= Math.ceil(total + 3); s++) {
+      // Dynamic tick spacing so 30s, 1m, 5m, 30m, 60m videos stay clean & readable inside one screen
+      let tickStep = 1;
+      if (px < 0.25) tickStep = 600;
+      else if (px < 0.5) tickStep = 300;
+      else if (px < 1.0) tickStep = 120;
+      else if (px < 2.2) tickStep = 60;
+      else if (px < 5.0) tickStep = 30;
+      else if (px < 10) tickStep = 15;
+      else if (px < 18) tickStep = 10;
+      else if (px < 32) tickStep = 5;
+      else if (px < 55) tickStep = 2;
+      const maxSec = Math.ceil(total + tickStep);
+      for (let s = 0; s <= maxSec; s += tickStep) {
         const tk = document.createElement('div');
         tk.className = 'ruler-tick'; tk.style.left = `${s * px}px`;
-        tk.textContent = `00:${String(s).padStart(2, '0')}`;
+        const mm = Math.floor(s / 60), ss = s % 60;
+        tk.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
         ruler.appendChild(tk);
       }
 
       const vLane = document.getElementById('laneVideo'); vLane.innerHTML = '';
       let x = 0;
       state.videoClips.forEach((c, i) => {
-        const w = Math.max(40, c.duration * px);
+        const w = Math.max(state.autoFitTimeline ? 6 : 18, c.duration * px);
         const sel = state.selectedTrack === 'video' && state.selectedId === c.id;
         const el = document.createElement('div');
         el.className = `tl-clip tl-clip-video ${sel ? 'selected' : ''}`;
@@ -3542,7 +3632,7 @@
         }
       }
       renderMediaDrawer();
-      renderTimeline();
+      fitTimelineToScreen();
       renderFrame(state.currentTime);
       showToast(I18N[state.lang].toastAdded);
     }
@@ -3855,14 +3945,20 @@
         b.addEventListener('click', () => {
           pushHistory();
           const total = Math.max(3, getTotalDuration());
-          const startT = Number(Math.min(state.currentTime, Math.max(0, total - 0.5)).toFixed(2));
-          const durT = Number(Math.min(Math.max(2.5, total - startT), Math.max(3.5, total * 0.5)).toFixed(2));
+          const startT = 0;
+          const durT = Number(Math.min(total, Math.max(3.5, Math.min(8, total * 0.5))).toFixed(2));
           const ov = {
             id: genId('ov'), kind: 'text', text: p.text, fontFamily: p.font,
             start: startT, duration: durT, x: 50, y: 50,
             fontSize: p.size, color: p.color, bgColor: p.bg, strokeColor: p.stroke, strokeWidth: p.sw, animation: p.anim
           };
-          state.overlayClips.push(ov); selectItem('overlay', ov.id); switchInspTab('basic'); renderFrame(state.currentTime);
+          state.overlayClips.push(ov);
+          if (state.currentTime > durT - 0.1) {
+            state.currentTime = 0;
+            syncMediaPlayback(false, 0, true);
+            updatePlayheadUI();
+          }
+          selectItem('overlay', ov.id); switchInspTab('basic'); renderTimeline(); renderFrame(state.currentTime);
           openInlineTextEditor(ov);
         });
         tpWrap.appendChild(b);
@@ -4190,27 +4286,27 @@
               if (ver === 0 && pos + hdr + 20 <= pos + size) {
                 const ts = dv.getUint32(pos + hdr + 12, false) || 1000;
                 mvhdTimescale = ts;
-                dv.setUint32(pos + hdr + 16, Math.round((durationMs / 1000) * ts), false);
+                if (dv.getUint32(pos + hdr + 16, false) === 0) dv.setUint32(pos + hdr + 16, Math.round((durationMs / 1000) * ts), false);
               } else if (ver === 1 && pos + hdr + 32 <= pos + size) {
                 const ts = dv.getUint32(pos + hdr + 20, false) || 1000;
                 mvhdTimescale = ts;
-                setU64(pos + hdr + 24, Math.round((durationMs / 1000) * ts));
+                if (dv.getUint32(pos + hdr + 24, false) === 0 && dv.getUint32(pos + hdr + 28, false) === 0) setU64(pos + hdr + 24, Math.round((durationMs / 1000) * ts));
               }
             } else if (type === 'tkhd') {
               const ver = u8[pos + hdr];
               if (ver === 0 && pos + hdr + 24 <= pos + size) {
-                dv.setUint32(pos + hdr + 20, Math.round((durationMs / 1000) * mvhdTimescale), false);
+                if (dv.getUint32(pos + hdr + 20, false) === 0) dv.setUint32(pos + hdr + 20, Math.round((durationMs / 1000) * mvhdTimescale), false);
               } else if (ver === 1 && pos + hdr + 36 <= pos + size) {
-                setU64(pos + hdr + 28, Math.round((durationMs / 1000) * mvhdTimescale));
+                if (dv.getUint32(pos + hdr + 28, false) === 0 && dv.getUint32(pos + hdr + 32, false) === 0) setU64(pos + hdr + 28, Math.round((durationMs / 1000) * mvhdTimescale));
               }
             } else if (type === 'mdhd') {
               const ver = u8[pos + hdr];
               if (ver === 0 && pos + hdr + 20 <= pos + size) {
                 const ts = dv.getUint32(pos + hdr + 12, false) || 1000;
-                dv.setUint32(pos + hdr + 16, Math.round((durationMs / 1000) * ts), false);
+                if (dv.getUint32(pos + hdr + 16, false) === 0) dv.setUint32(pos + hdr + 16, Math.round((durationMs / 1000) * ts), false);
               } else if (ver === 1 && pos + hdr + 32 <= pos + size) {
                 const ts = dv.getUint32(pos + hdr + 20, false) || 1000;
-                setU64(pos + hdr + 24, Math.round((durationMs / 1000) * ts));
+                if (dv.getUint32(pos + hdr + 24, false) === 0 && dv.getUint32(pos + hdr + 28, false) === 0) setU64(pos + hdr + 24, Math.round((durationMs / 1000) * ts));
               }
             } else if (type === 'mehd') {
               const ver = u8[pos + hdr];
@@ -4229,6 +4325,611 @@
     }
 
     let exportTotalSec = 0;
+    let exportVideoTrack = null;
+
+
+    // =========================================
+    // 11B. PURE-JS ISO-BMFF MP4 MUXER + FRAME-BY-FRAME WEBCODECS OFFLINE EXPORT
+    // (0ms Lip-Sync, 0ms Caption Sync, Crystal-Clear Full HD, 100% Offline)
+    // =========================================
+    class MWMp4Muxer {
+      constructor({ width, height, fps, videoCodecDesc, audioSampleRate = 48000, audioChannels = 2, audioCodecDesc = null }) {
+        this.width = width;
+        this.height = height;
+        this.fps = fps;
+        this.videoTimescale = 90000;
+        this.audioTimescale = audioSampleRate;
+        this.audioChannels = audioChannels;
+        this.videoCodecDesc = videoCodecDesc ? new Uint8Array(videoCodecDesc) : null;
+        this.audioCodecDesc = audioCodecDesc ? new Uint8Array(audioCodecDesc) : null;
+        this.videoSamples = [];
+        this.audioSamples = [];
+      }
+      addVideoSample(data, timestampUs, durationUs, isKey) {
+        this.videoSamples.push({ data: new Uint8Array(data), timestampUs, durationUs, isKey });
+      }
+      addAudioSample(data, timestampUs, durationUs) {
+        this.audioSamples.push({ data: new Uint8Array(data), timestampUs, durationUs });
+      }
+      static u32(v) { return [(v >>> 24) & 255, (v >>> 16) & 255, (v >>> 8) & 255, v & 255]; }
+      static u16(v) { return [(v >>> 8) & 255, v & 255]; }
+      static strBytes(s) { const a = []; for (let i = 0; i < s.length; i++) a.push(s.charCodeAt(i) & 255); return a; }
+      static concat(...parts) {
+        let len = 0;
+        for (const p of parts) len += p.length;
+        const out = new Uint8Array(len);
+        let off = 0;
+        for (const p of parts) { out.set(p, off); off += p.length; }
+        return out;
+      }
+      static box(type, ...payloads) {
+        const body = MWMp4Muxer.concat(...payloads.map(p => p instanceof Uint8Array ? p : new Uint8Array(p)));
+        const hdr = new Uint8Array(8);
+        const dv = new DataView(hdr.buffer);
+        dv.setUint32(0, 8 + body.length, false);
+        for (let i = 0; i < 4; i++) hdr[4 + i] = type.charCodeAt(i);
+        return MWMp4Muxer.concat(hdr, body);
+      }
+      static fullBox(type, version, flags, ...payloads) {
+        const vf = new Uint8Array([version & 255, (flags >>> 16) & 255, (flags >>> 8) & 255, flags & 255]);
+        return MWMp4Muxer.box(type, vf, ...payloads);
+      }
+      buildStts(samples, timescale) {
+        const entries = [];
+        for (const s of samples) {
+          const delta = Math.max(1, Math.round((s.durationUs / 1000000) * timescale));
+          if (entries.length && entries[entries.length - 1].delta === delta) entries[entries.length - 1].count++;
+          else entries.push({ count: 1, delta });
+        }
+        const buf = new Uint8Array(4 + entries.length * 8);
+        const dv = new DataView(buf.buffer);
+        dv.setUint32(0, entries.length, false);
+        entries.forEach((e, i) => {
+          dv.setUint32(4 + i * 8, e.count, false);
+          dv.setUint32(8 + i * 8, e.delta, false);
+        });
+        return MWMp4Muxer.fullBox('stts', 0, 0, buf);
+      }
+      buildStss(samples) {
+        const keys = [];
+        samples.forEach((s, i) => { if (s.isKey) keys.push(i + 1); });
+        const buf = new Uint8Array(4 + keys.length * 4);
+        const dv = new DataView(buf.buffer);
+        dv.setUint32(0, keys.length, false);
+        keys.forEach((k, i) => dv.setUint32(4 + i * 4, k, false));
+        return MWMp4Muxer.fullBox('stss', 0, 0, buf);
+      }
+      buildStsc(sampleCount) {
+        // 1 sample per chunk -> simplest & universally compatible across all players
+        const buf = new Uint8Array(16);
+        const dv = new DataView(buf.buffer);
+        dv.setUint32(0, 1, false);
+        dv.setUint32(4, 1, false);
+        dv.setUint32(8, 1, false);
+        dv.setUint32(12, 1, false);
+        return MWMp4Muxer.fullBox('stsc', 0, 0, buf);
+      }
+      buildStsz(samples) {
+        const buf = new Uint8Array(8 + samples.length * 4);
+        const dv = new DataView(buf.buffer);
+        dv.setUint32(0, 0, false);
+        dv.setUint32(4, samples.length, false);
+        samples.forEach((s, i) => dv.setUint32(8 + i * 4, s.data.length, false));
+        return MWMp4Muxer.fullBox('stsz', 0, 0, buf);
+      }
+      buildStco(offsets) {
+        const buf = new Uint8Array(4 + offsets.length * 4);
+        const dv = new DataView(buf.buffer);
+        dv.setUint32(0, offsets.length, false);
+        offsets.forEach((o, i) => dv.setUint32(4 + i * 4, o >>> 0, false));
+        return MWMp4Muxer.fullBox('stco', 0, 0, buf);
+      }
+      buildEsds(asc) {
+        // AAC-LC AudioSpecificConfig fallback: 48kHz stereo = 0x11 0x90
+        const cfg = (asc && asc.length >= 2) ? asc : new Uint8Array([0x11, 0x90]);
+        const decSpecInfo = new Uint8Array([0x05, cfg.length, ...cfg]);
+        const decCfg = new Uint8Array([
+          0x04, 13 + decSpecInfo.length,
+          0x40, // MPEG-4 Audio
+          0x15, // streamType=5 (audio), upstream=0, reserved=1
+          0x00, 0x00, 0x00, // bufferSizeDB
+          0x00, 0x03, 0xE8, 0x00, // maxBitrate 256000
+          0x00, 0x02, 0xEE, 0x00, // avgBitrate 192000
+          ...decSpecInfo
+        ]);
+        const slCfg = new Uint8Array([0x06, 0x01, 0x02]);
+        const esDesc = new Uint8Array([
+          0x03, 3 + decCfg.length + slCfg.length,
+          0x00, 0x02, // ES_ID
+          0x00,
+          ...decCfg,
+          ...slCfg
+        ]);
+        return MWMp4Muxer.fullBox('esds', 0, 0, esDesc);
+      }
+      buildVideoTrak(movieDurMs, offsets) {
+        const vDurTicks = Math.max(1, Math.round((movieDurMs / 1000) * this.videoTimescale));
+        const tkhd = MWMp4Muxer.fullBox('tkhd', 0, 3, new Uint8Array([
+          0,0,0,0, 0,0,0,0, // creation, mod
+          ...MWMp4Muxer.u32(1), // track_id
+          0,0,0,0,
+          ...MWMp4Muxer.u32(movieDurMs),
+          0,0,0,0, 0,0,0,0,
+          0,0, 0,0, 0,0, 0,0,
+          // unity matrix
+          0,1,0,0, 0,0,0,0, 0,0,0,0,
+          0,0,0,0, 0,1,0,0, 0,0,0,0,
+          0,0,0,0, 0,0,0,0, 0x40,0,0,0,
+          ...MWMp4Muxer.u32(this.width << 16),
+          ...MWMp4Muxer.u32(this.height << 16)
+        ]));
+        const mdhd = MWMp4Muxer.fullBox('mdhd', 0, 0, new Uint8Array([
+          0,0,0,0, 0,0,0,0,
+          ...MWMp4Muxer.u32(this.videoTimescale),
+          ...MWMp4Muxer.u32(vDurTicks),
+          0x55, 0xc4, 0, 0
+        ]));
+        const hdlr = MWMp4Muxer.fullBox('hdlr', 0, 0, new Uint8Array([
+          0,0,0,0,
+          ...MWMp4Muxer.strBytes('vide'),
+          0,0,0,0, 0,0,0,0, 0,0,0,0,
+          ...MWMp4Muxer.strBytes('VideoHandler'), 0
+        ]));
+        const vmhd = MWMp4Muxer.fullBox('vmhd', 0, 1, new Uint8Array(8));
+        const urlBox = MWMp4Muxer.fullBox('url ', 0, 1);
+        const dref = MWMp4Muxer.fullBox('dref', 0, 0, new Uint8Array([0,0,0,1]), urlBox);
+        const dinf = MWMp4Muxer.box('dinf', dref);
+
+        const avcC = this.videoCodecDesc ? MWMp4Muxer.box('avcC', this.videoCodecDesc) : new Uint8Array(0);
+        const avc1Head = new Uint8Array(78);
+        const dv = new DataView(avc1Head.buffer);
+        dv.setUint16(6, 1, false); // data_reference_index
+        dv.setUint16(24, this.width, false);
+        dv.setUint16(26, this.height, false);
+        dv.setUint32(28, 0x00480000, false); // horizresolution 72 dpi
+        dv.setUint32(32, 0x00480000, false); // vertresolution 72 dpi
+        dv.setUint16(40, 1, false); // frame_count
+        dv.setUint16(74, 0x0018, false); // depth
+        dv.setInt16(76, -1, false); // pre_defined
+        const avc1 = MWMp4Muxer.box('avc1', avc1Head, avcC);
+        const stsd = MWMp4Muxer.fullBox('stsd', 0, 0, new Uint8Array([0,0,0,1]), avc1);
+
+        const stbl = MWMp4Muxer.box(
+          'stbl',
+          stsd,
+          this.buildStts(this.videoSamples, this.videoTimescale),
+          this.buildStss(this.videoSamples),
+          this.buildStsc(this.videoSamples.length),
+          this.buildStsz(this.videoSamples),
+          this.buildStco(offsets)
+        );
+        const minf = MWMp4Muxer.box('minf', vmhd, dinf, stbl);
+        const mdia = MWMp4Muxer.box('mdia', mdhd, hdlr, minf);
+        return MWMp4Muxer.box('trak', tkhd, mdia);
+      }
+      buildAudioTrak(movieDurMs, offsets) {
+        const aDurTicks = Math.max(1, Math.round((movieDurMs / 1000) * this.audioTimescale));
+        const tkhd = MWMp4Muxer.fullBox('tkhd', 0, 3, new Uint8Array([
+          0,0,0,0, 0,0,0,0,
+          ...MWMp4Muxer.u32(2), // track_id
+          0,0,0,0,
+          ...MWMp4Muxer.u32(movieDurMs),
+          0,0,0,0, 0,0,0,0,
+          0,0, 0,0, 0x01,0x00, 0,0, // volume = 1.0
+          0,1,0,0, 0,0,0,0, 0,0,0,0,
+          0,0,0,0, 0,1,0,0, 0,0,0,0,
+          0,0,0,0, 0,0,0,0, 0x40,0,0,0,
+          0,0,0,0, 0,0,0,0
+        ]));
+        const mdhd = MWMp4Muxer.fullBox('mdhd', 0, 0, new Uint8Array([
+          0,0,0,0, 0,0,0,0,
+          ...MWMp4Muxer.u32(this.audioTimescale),
+          ...MWMp4Muxer.u32(aDurTicks),
+          0x55, 0xc4, 0, 0
+        ]));
+        const hdlr = MWMp4Muxer.fullBox('hdlr', 0, 0, new Uint8Array([
+          0,0,0,0,
+          ...MWMp4Muxer.strBytes('soun'),
+          0,0,0,0, 0,0,0,0, 0,0,0,0,
+          ...MWMp4Muxer.strBytes('SoundHandler'), 0
+        ]));
+        const smhd = MWMp4Muxer.fullBox('smhd', 0, 0, new Uint8Array(4));
+        const urlBox = MWMp4Muxer.fullBox('url ', 0, 1);
+        const dref = MWMp4Muxer.fullBox('dref', 0, 0, new Uint8Array([0,0,0,1]), urlBox);
+        const dinf = MWMp4Muxer.box('dinf', dref);
+
+        const mp4aHead = new Uint8Array(28);
+        const dv = new DataView(mp4aHead.buffer);
+        dv.setUint16(6, 1, false); // data_reference_index
+        dv.setUint16(16, this.audioChannels, false);
+        dv.setUint16(18, 16, false); // sampleSize
+        dv.setUint32(24, (this.audioTimescale << 16) >>> 0, false);
+        const esds = this.buildEsds(this.audioCodecDesc);
+        const mp4a = MWMp4Muxer.box('mp4a', mp4aHead, esds);
+        const stsd = MWMp4Muxer.fullBox('stsd', 0, 0, new Uint8Array([0,0,0,1]), mp4a);
+
+        const stbl = MWMp4Muxer.box(
+          'stbl',
+          stsd,
+          this.buildStts(this.audioSamples, this.audioTimescale),
+          this.buildStsc(this.audioSamples.length),
+          this.buildStsz(this.audioSamples),
+          this.buildStco(offsets)
+        );
+        const minf = MWMp4Muxer.box('minf', smhd, dinf, stbl);
+        const mdia = MWMp4Muxer.box('mdia', mdhd, hdlr, minf);
+        return MWMp4Muxer.box('trak', tkhd, mdia);
+      }
+      finalize(totalDurationSec) {
+        const movieDurMs = Math.max(100, Math.round(totalDurationSec * 1000));
+        const hasAudio = this.audioSamples.length > 0;
+        const ftyp = MWMp4Muxer.box('ftyp', new Uint8Array([
+          ...MWMp4Muxer.strBytes('isom'),
+          0,0,2,0,
+          ...MWMp4Muxer.strBytes('isom'),
+          ...MWMp4Muxer.strBytes('iso2'),
+          ...MWMp4Muxer.strBytes('avc1'),
+          ...MWMp4Muxer.strBytes('mp41')
+        ]));
+
+        // Build mdat payload (video samples then audio samples)
+        let mdatBodyLen = 0;
+        for (const s of this.videoSamples) mdatBodyLen += s.data.length;
+        for (const s of this.audioSamples) mdatBodyLen += s.data.length;
+        const mdatHdr = new Uint8Array(8);
+        new DataView(mdatHdr.buffer).setUint32(0, 8 + mdatBodyLen, false);
+        mdatHdr.set(MWMp4Muxer.strBytes('mdat'), 4);
+
+        // Compute exact byte offsets when file layout is [ftyp][mdat][moov]
+        let cursor = ftyp.length + 8;
+        const vOffsets = [];
+        for (const s of this.videoSamples) { vOffsets.push(cursor); cursor += s.data.length; }
+        const aOffsets = [];
+        for (const s of this.audioSamples) { aOffsets.push(cursor); cursor += s.data.length; }
+
+        const mvhd = MWMp4Muxer.fullBox('mvhd', 0, 0, new Uint8Array([
+          0,0,0,0, 0,0,0,0,
+          ...MWMp4Muxer.u32(1000), // timescale 1000
+          ...MWMp4Muxer.u32(movieDurMs),
+          0,1,0,0, // rate 1.0
+          1,0, // volume 1.0
+          0,0, 0,0,0,0, 0,0,0,0,
+          0,1,0,0, 0,0,0,0, 0,0,0,0,
+          0,0,0,0, 0,1,0,0, 0,0,0,0,
+          0,0,0,0, 0,0,0,0, 0x40,0,0,0,
+          0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+          ...MWMp4Muxer.u32(hasAudio ? 3 : 2) // next_track_ID
+        ]));
+        const vTrak = this.buildVideoTrak(movieDurMs, vOffsets);
+        const moov = hasAudio
+          ? MWMp4Muxer.box('moov', mvhd, vTrak, this.buildAudioTrak(movieDurMs, aOffsets))
+          : MWMp4Muxer.box('moov', mvhd, vTrak);
+
+        // Assemble final MP4 Blob without copying huge buffers unnecessarily
+        const blobParts = [ftyp, mdatHdr];
+        for (const s of this.videoSamples) blobParts.push(s.data);
+        for (const s of this.audioSamples) blobParts.push(s.data);
+        blobParts.push(moov);
+        return new Blob(blobParts, { type: 'video/mp4' });
+      }
+    }
+
+    async function renderOfflineAudioMix(totalSec, sampleRate = 48000) {
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if (!OfflineAC) return null;
+      const totalFrames = Math.max(sampleRate, Math.ceil(totalSec * sampleRate));
+      const offCtx = new OfflineAC(2, totalFrames, sampleRate);
+      const outGain = offCtx.createGain();
+      outGain.gain.value = state.masterVol;
+      outGain.connect(offCtx.destination);
+
+      const decodedCache = new Map();
+      const decodeSrc = async (src) => {
+        if (!src) return null;
+        if (decodedCache.has(src)) return decodedCache.get(src);
+        try {
+          const resp = await fetch(src);
+          const arr = await resp.arrayBuffer();
+          const buf = await offCtx.decodeAudioData(arr);
+          decodedCache.set(src, buf);
+          return buf;
+        } catch (e) {
+          decodedCache.set(src, null);
+          return null;
+        }
+      };
+
+      const scheduleBuffer = (buf, when, offset, dur, rate, vol, fadeIn, fadeOut) => {
+        if (!buf || dur <= 0.01 || vol <= 0.001) return;
+        const srcNode = offCtx.createBufferSource();
+        srcNode.buffer = buf;
+        srcNode.playbackRate.value = Math.max(0.25, Math.min(4.0, rate || 1.0));
+        const g = offCtx.createGain();
+        const startT = Math.max(0, when);
+        const endT = Math.min(totalSec, startT + dur);
+        const safeVol = Math.max(0.0001, Math.min(1.5, vol));
+        if (fadeIn > 0.02) {
+          g.gain.setValueAtTime(0.0001, startT);
+          g.gain.linearRampToValueAtTime(safeVol, Math.min(endT, startT + fadeIn));
+        } else {
+          g.gain.setValueAtTime(safeVol, startT);
+        }
+        if (fadeOut > 0.02 && endT - fadeOut > startT) {
+          g.gain.setValueAtTime(safeVol, Math.max(startT, endT - fadeOut));
+          g.gain.linearRampToValueAtTime(0.0001, endT);
+        }
+        srcNode.connect(g);
+        g.connect(outGain);
+        const srcDur = Math.max(0.01, Math.min(buf.duration - Math.max(0, offset), dur * (rate || 1.0)));
+        if (srcDur > 0.01) {
+          try { srcNode.start(startT, Math.max(0, offset), srcDur); } catch (e) {}
+        }
+      };
+
+      // 1. Main Video Clips native audio (exact clip start, trimStart, speed, fades!)
+      let cursor = 0;
+      for (const c of state.videoClips) {
+        if (c.type === 'video' && !c.muted && !c.reversed && c.src) {
+          const buf = await decodeSrc(c.src);
+          scheduleBuffer(buf, cursor, c.trimStart || 0, c.duration, c.speed || 1.0, c.volume ?? 1.0, c.fadeIn || 0, c.fadeOut || 0);
+        }
+        cursor += c.duration;
+      }
+
+      // 2. PiP Video Overlays native audio
+      for (const ov of state.overlayClips) {
+        if (ov.kind === 'video_overlay' && !ov.muted && ov.src) {
+          const buf = await decodeSrc(ov.src);
+          scheduleBuffer(buf, ov.start, 0, ov.duration, 1.0, ov.volume ?? 0.8, 0, 0);
+        }
+      }
+
+      // 3. Uploaded Audio Tracks
+      for (const a of state.audioClips) {
+        if (a.type === 'upload' && !a.muted) {
+          const reg = mediaRegistry.get(a.assetId);
+          const aSrc = a.src || (reg && reg.el ? reg.el.src : null);
+          const buf = await decodeSrc(aSrc);
+          scheduleBuffer(buf, a.start, 0, a.duration, 1.0, a.volume ?? 1.0, a.fadeIn || 0, a.fadeOut || 0);
+        }
+      }
+
+      try {
+        return await offCtx.startRendering();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function startWebCodecsExport(resVal, fpsVal) {
+      if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return false;
+
+      const origW = canvas.width, origH = canvas.height;
+      const aspect = origW / origH;
+      let outW, outH;
+      if (resVal === 1080) {
+        if (aspect >= 1) { outH = 1080; outW = Math.round(1080 * aspect); }
+        else { outW = 1080; outH = Math.round(1080 / aspect); }
+      } else {
+        if (aspect >= 1) { outH = 720; outW = Math.round(720 * aspect); }
+        else { outW = 720; outH = Math.round(720 / aspect); }
+      }
+      outW = outW - (outW % 2);
+      outH = outH - (outH % 2);
+
+      // Find best supported H.264 codec
+      const bitrate = resVal === 1080 ? 20000000 : 12000000;
+      const codecList = ['avc1.640028', 'avc1.4D4028', 'avc1.42E01E'];
+      let chosenVideoCfg = null;
+      for (const codec of codecList) {
+        const cfg = { codec, width: outW, height: outH, bitrate, framerate: fpsVal, avc: { format: 'avc' } };
+        try {
+          const sup = await VideoEncoder.isConfigSupported(cfg);
+          if (sup && sup.supported) { chosenVideoCfg = cfg; break; }
+        } catch (e) {}
+      }
+      if (!chosenVideoCfg) return false;
+
+      // Check AAC AudioEncoder support
+      let chosenAudioCfg = null;
+      if (typeof AudioEncoder !== 'undefined' && typeof AudioData !== 'undefined') {
+        const aCfg = { codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2, bitrate: 192000 };
+        try {
+          const aSup = await AudioEncoder.isConfigSupported(aCfg);
+          if (aSup && aSup.supported) chosenAudioCfg = aCfg;
+        } catch (e) {}
+      }
+
+      isExporting = true;
+      exportTotalSec = getTotalDuration();
+      document.getElementById('exportProgWrap').classList.remove('hidden');
+      document.getElementById('exportProgBar').style.width = '2%';
+      document.getElementById('exportProgText').textContent = state.lang === 'ar'
+        ? 'جاري مزامنة الصوت بدقة 100%...'
+        : 'Rendering sample-accurate audio...';
+
+      // Step 1: Offline sample-accurate audio mix & AAC encoding
+      let audioSamples = [];
+      let audioCodecDesc = null;
+      if (chosenAudioCfg) {
+        const audioBuf = await renderOfflineAudioMix(exportTotalSec, 48000);
+        if (audioBuf) {
+          const aEnc = new AudioEncoder({
+            output: (chunk, meta) => {
+              if (!audioCodecDesc && meta && meta.decoderConfig && meta.decoderConfig.description) {
+                audioCodecDesc = new Uint8Array(meta.decoderConfig.description);
+              }
+              const bytes = new Uint8Array(chunk.byteLength);
+              chunk.copyTo(bytes);
+              audioSamples.push({ data: bytes, timestampUs: chunk.timestamp, durationUs: chunk.duration || Math.round(1024 * 1000000 / 48000) });
+            },
+            error: (e) => console.error('AudioEncoder error:', e)
+          });
+          aEnc.configure(chosenAudioCfg);
+          const ch0 = audioBuf.getChannelData(0);
+          const ch1 = audioBuf.numberOfChannels > 1 ? audioBuf.getChannelData(1) : ch0;
+          const step = 1024;
+          for (let off = 0; off < audioBuf.length; off += step) {
+            const count = Math.min(step, audioBuf.length - off);
+            const planar = new Float32Array(count * 2);
+            planar.set(ch0.subarray(off, off + count), 0);
+            planar.set(ch1.subarray(off, off + count), count);
+            const ad = new AudioData({
+              format: 'f32-planar',
+              sampleRate: 48000,
+              numberOfFrames: count,
+              numberOfChannels: 2,
+              timestamp: Math.round((off / 48000) * 1000000),
+              data: planar
+            });
+            aEnc.encode(ad);
+            ad.close();
+          }
+          await aEnc.flush();
+          aEnc.close();
+        }
+      }
+
+      // Step 2: Frame-by-frame exact video rendering & H.264 encoding
+      canvas.width = outW;
+      canvas.height = outH;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Pause all media elements so we control every frame's exact timestamp
+      mediaRegistry.forEach(entry => {
+        if ((entry.type === 'video' || entry.type === 'audio') && entry.el && !entry.el.paused) {
+          try { entry.el.pause(); } catch (e) {}
+        }
+      });
+
+      const seekExact = (el, targetT) => new Promise(resolve => {
+        if (!el) return resolve();
+        const dur = isFinite(el.duration) && el.duration > 0 ? el.duration : 99999;
+        const clamped = Math.max(0, Math.min(dur - 0.02, targetT));
+        if (Math.abs((el.currentTime || 0) - clamped) < 0.008 && el.readyState >= 2) return resolve();
+        let doneFlag = false;
+        const done = () => { if (!doneFlag) { doneFlag = true; resolve(); } };
+        el.addEventListener('seeked', done, { once: true });
+        try { el.currentTime = clamped; } catch (e) { done(); }
+        setTimeout(done, 450);
+      });
+
+      let videoCodecDesc = null;
+      const videoSamples = [];
+      let vEncErr = null;
+      const vEnc = new VideoEncoder({
+        output: (chunk, meta) => {
+          if (!videoCodecDesc && meta && meta.decoderConfig && meta.decoderConfig.description) {
+            videoCodecDesc = new Uint8Array(meta.decoderConfig.description);
+          }
+          const bytes = new Uint8Array(chunk.byteLength);
+          chunk.copyTo(bytes);
+          videoSamples.push({
+            data: bytes,
+            timestampUs: chunk.timestamp,
+            durationUs: chunk.duration || Math.round(1000000 / fpsVal),
+            isKey: chunk.type === 'key'
+          });
+        },
+        error: (e) => { vEncErr = e; console.error('VideoEncoder error:', e); }
+      });
+      vEnc.configure(chosenVideoCfg);
+
+      const totalFrames = Math.max(1, Math.ceil(exportTotalSec * fpsVal));
+      const frameDurUs = Math.round(1000000 / fpsVal);
+
+      try {
+        for (let f = 0; f < totalFrames; f++) {
+          if (vEncErr) throw vEncErr;
+          const t = Math.min(exportTotalSec, f / fpsVal);
+          const seeks = [];
+
+          // Seek active main video clip to exact millisecond
+          const active = getActiveVideoClipAt(t);
+          if (active && active.clip.type === 'video') {
+            const c = active.clip;
+            const reg = mediaRegistry.get(c.assetId);
+            if (reg && reg.el) {
+              const targetT = c.reversed
+                ? Math.max(0, (c.trimStart + c.duration * c.speed) - active.localT * c.speed)
+                : Math.max(0, c.trimStart + active.localT * c.speed);
+              seeks.push(seekExact(reg.el, targetT));
+            }
+          }
+          // Seek any active PiP video overlays at exact millisecond t
+          for (const ov of state.overlayClips) {
+            if (ov.kind === 'video_overlay' && t >= ov.start && t <= ov.start + ov.duration) {
+              const preg = mediaRegistry.get(ov.assetId);
+              if (preg && preg.el) seeks.push(seekExact(preg.el, Math.max(0, t - ov.start)));
+            }
+          }
+          if (seeks.length) await Promise.all(seeks);
+
+          // Render exact composited frame (video + PiP + logo + captions + text + transitions + effects)
+          renderFrame(t);
+
+          while (vEnc.encodeQueueSize > 8) {
+            await new Promise(r => setTimeout(r, 8));
+          }
+          const vf = new VideoFrame(canvas, { timestamp: f * frameDurUs, duration: frameDurUs });
+          vEnc.encode(vf, { keyFrame: (f % (fpsVal * 2) === 0) });
+          vf.close();
+
+          if (f % 5 === 0 || f === totalFrames - 1) {
+            const pct = Math.min(99, Math.max(5, Math.round(((f + 1) / totalFrames) * 98)));
+            document.getElementById('exportProgBar').style.width = `${pct}%`;
+            document.getElementById('exportProgText').textContent = state.lang === 'ar'
+              ? `تصدير WebCodecs HD — ${pct}% (إطار ${f + 1} / ${totalFrames})`
+              : `WebCodecs HD Export — ${pct}% (Frame ${f + 1} / ${totalFrames})`;
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+        await vEnc.flush();
+        vEnc.close();
+      } catch (err) {
+        try { vEnc.close(); } catch (e) {}
+        canvas.width = origW; canvas.height = origH;
+        isExporting = false;
+        renderFrame(state.currentTime);
+        return false;
+      }
+
+      // Step 3: Mux into a 100% standard MP4 file
+      document.getElementById('exportProgBar').style.width = '100%';
+      document.getElementById('exportProgText').textContent = state.lang === 'ar' ? 'جاري حفظ ملف MP4...' : 'Finalizing MP4...';
+
+      const muxer = new MWMp4Muxer({
+        width: outW,
+        height: outH,
+        fps: fpsVal,
+        videoCodecDesc,
+        audioSampleRate: 48000,
+        audioChannels: 2,
+        audioCodecDesc
+      });
+      for (const vs of videoSamples) muxer.addVideoSample(vs.data, vs.timestampUs, vs.durationUs, vs.isKey);
+      for (const as of audioSamples) muxer.addAudioSample(as.data, as.timestampUs, as.durationUs);
+      const mp4Blob = muxer.finalize(exportTotalSec);
+
+      canvas.width = origW; canvas.height = origH;
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      isExporting = false;
+      renderFrame(state.currentTime);
+
+      const url = URL.createObjectURL(mp4Blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${(document.getElementById('inpProjectName').value || 'MW_Video_Editor').replace(/\s+/g, '_')}_${resVal}p_${fpsVal}fps_SYNCED.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 6000);
+      document.getElementById('exportModal').classList.add('hidden');
+      document.getElementById('exportProgWrap').classList.add('hidden');
+      showToast(I18N[state.lang].toastExported);
+      return true;
+    }
 
     async function startExport() {
       if (!state.videoClips.length) {
@@ -4238,15 +4939,25 @@
       ensureAudioCtx();
       try { await audioCtx.resume(); } catch (e) {}
       stopPlayback();
+
+      const resVal = parseInt(document.getElementById('selExportRes')?.value || '1080', 10);
+      const fpsVal = parseInt(document.getElementById('selExportFps')?.value || '30', 10);
+      const fmtVal = document.getElementById('selExportFmt')?.value || 'mp4';
+
+      // Use Frame-by-Frame Offline WebCodecs Engine for MP4 (0ms lip-sync & caption sync!)
+      if (fmtVal === 'mp4') {
+        const ok = await startWebCodecsExport(resVal, fpsVal);
+        if (ok) return;
+      }
+      await startLegacyMediaRecorderExport(resVal, fpsVal, fmtVal);
+    }
+
+    async function startLegacyMediaRecorderExport(resVal, fpsVal, fmtVal) {
       isExporting = true; recChunks = []; state.currentTime = 0;
       exportTotalSec = getTotalDuration();
       document.getElementById('exportProgWrap').classList.remove('hidden');
       document.getElementById('exportProgBar').style.width = '0%';
-      document.getElementById('exportProgText').textContent = '0%';
-
-      const resVal = parseInt(document.getElementById('selExportRes')?.value || '720', 10);
-      const fpsVal = parseInt(document.getElementById('selExportFps')?.value || '30', 10);
-      const fmtVal = document.getElementById('selExportFmt')?.value || 'mp4';
+      document.getElementById('exportProgText').textContent = state.lang === 'ar' ? 'جاري تجهيز المزامنة...' : 'Syncing media...';
       const origW = canvas.width, origH = canvas.height;
       const aspect = origW / origH;
       if (resVal === 1080) {
@@ -4256,28 +4967,31 @@
         if (aspect >= 1) { canvas.height = 720; canvas.width = Math.round(720 * aspect); }
         else { canvas.width = 720; canvas.height = Math.round(720 / aspect); }
       }
-      // Ensure even dimensions for hardware video encoders
+      // Ensure even dimensions for hardware video encoders & crisp high-quality scaling
       canvas.width = canvas.width - (canvas.width % 2);
       canvas.height = canvas.height - (canvas.height % 2);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
-      // Preload & seek first video clip to exact start BEFORE starting MediaRecorder
-      const firstClip = state.videoClips[0];
-      if (firstClip && firstClip.type === 'video') {
-        const reg = mediaRegistry.get(firstClip.assetId);
-        if (reg && reg.el) {
-          try { reg.el.currentTime = firstClip.trimStart || 0; } catch (e) {}
-          await new Promise(resolve => {
-            if (reg.el.readyState >= 2) return resolve();
-            const done = () => resolve();
-            reg.el.addEventListener('seeked', done, { once: true });
-            reg.el.addEventListener('canplay', done, { once: true });
-            setTimeout(done, 800);
-          });
+      // Helper to reliably seek any media element and wait until frame is decoded & ready
+      const seekAndWait = (el, targetT) => new Promise(resolve => {
+        if (!el) return resolve();
+        try { el.pause(); } catch (e) {}
+        const needsSeek = Math.abs((el.currentTime || 0) - targetT) > 0.02;
+        if (!needsSeek && el.readyState >= 3) return resolve();
+        let finished = false;
+        const done = () => { if (!finished) { finished = true; resolve(); } };
+        if (needsSeek) {
+          el.addEventListener('seeked', done, { once: true });
+          try { el.currentTime = targetT; } catch (e) { done(); }
+        } else {
+          el.addEventListener('canplaythrough', done, { once: true });
+          el.addEventListener('canplay', done, { once: true });
         }
-      }
-      renderFrame(0);
+        setTimeout(done, 1500);
+      });
 
-      // Route ALL audio cleanly into exportDest!
+      // Route ALL audio cleanly into exportDest BEFORE starting playback!
       exportDest = audioCtx.createMediaStreamDestination();
       try { masterGain.connect(exportDest); } catch (e) {}
       mediaRegistry.forEach(entry => {
@@ -4286,20 +5000,68 @@
         }
       });
 
-      const videoTracks = canvas.captureStream(fpsVal).getVideoTracks();
+      // Preload & seek main video, PiP videos, and uploaded audio to exact t=0
+      const preloadPromises = [];
+      const startPlayEls = [];
+      const firstClip = state.videoClips[0];
+      if (firstClip && firstClip.type === 'video') {
+        const reg = mediaRegistry.get(firstClip.assetId);
+        if (reg && reg.el) {
+          preloadPromises.push(seekAndWait(reg.el, firstClip.trimStart || 0));
+          if (!firstClip.reversed) startPlayEls.push({ el: reg.el, clip: firstClip, isMain: true });
+        }
+      }
+      for (const ov of state.overlayClips) {
+        if (ov.kind === 'video_overlay') {
+          const preg = mediaRegistry.get(ov.assetId);
+          if (preg && preg.el) {
+            preloadPromises.push(seekAndWait(preg.el, Math.max(0, 0 - ov.start)));
+            if (ov.start <= 0.02 && ov.start + ov.duration > 0) startPlayEls.push({ el: preg.el, ov, isPip: true });
+          }
+        }
+      }
+      for (const a of state.audioClips) {
+        if (a.type === 'upload') {
+          const areg = mediaRegistry.get(a.assetId);
+          if (areg && areg.el) {
+            preloadPromises.push(seekAndWait(areg.el, Math.max(0, 0 - a.start)));
+            if (a.start <= 0.02 && a.start + a.duration > 0) startPlayEls.push({ el: areg.el, a, isAud: true });
+          }
+        }
+      }
+      await Promise.all(preloadPromises);
+      renderFrame(0);
+
+      // Use manual requestFrame() captureStream(0) if supported so every captured frame matches exact video/caption timestamp!
+      let capStream;
+      try {
+        capStream = canvas.captureStream(0);
+        exportVideoTrack = capStream.getVideoTracks()[0] || null;
+        if (!exportVideoTrack || typeof exportVideoTrack.requestFrame !== 'function') {
+          exportVideoTrack = null;
+          capStream = canvas.captureStream(fpsVal);
+        }
+      } catch (e) {
+        exportVideoTrack = null;
+        capStream = canvas.captureStream(fpsVal);
+      }
+      const videoTracks = capStream.getVideoTracks();
       const audioTracks = exportDest.stream.getAudioTracks();
       const stream = new MediaStream([...videoTracks, ...audioTracks]);
 
       let mime = '';
       let ext = 'mp4';
       const mp4Candidates = [
-        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4;codecs=avc1.640032,mp4a.40.2',
+        'video/mp4;codecs=avc1.640028,mp4a.40.2',
+        'video/mp4;codecs=avc1.4D4028,mp4a.40.2',
         'video/mp4;codecs=avc1,mp4a.40.2',
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
         'video/mp4'
       ];
       const webmCandidates = [
-        'video/webm;codecs=vp8,opus',
         'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
         'video/webm'
       ];
       const list = fmtVal === 'mp4' ? [...mp4Candidates, ...webmCandidates] : [...webmCandidates, ...mp4Candidates];
@@ -4312,10 +5074,10 @@
           }
         } catch (e) {}
       }
-      // Balanced high-bitrate for crisp HD/Full-HD without choking hardware/software encoder
+      // Ultra-crisp high-bitrate encoding (20 Mbps @ 1080p / 12 Mbps @ 720p + 256kbps audio)
       const opts = {
-        videoBitsPerSecond: resVal === 1080 ? 8000000 : 5000000,
-        audioBitsPerSecond: 160000
+        videoBitsPerSecond: resVal === 1080 ? 20000000 : 12000000,
+        audioBitsPerSecond: 256000
       };
       if (mime) opts.mimeType = mime;
 
@@ -4331,9 +5093,11 @@
         if (isExporting) finishExport();
       };
       mediaRecorder.onstop = async () => {
-        const actualDurMs = Math.max(Math.round(exportTotalSec * 1000), Math.round(performance.now() - exportStartPerf));
+        const actualDurMs = Math.round(exportTotalSec * 1000);
         exportStartPerf = 0;
+        exportVideoTrack = null;
         canvas.width = origW; canvas.height = origH;
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
         try { if (exportDest) masterGain.disconnect(exportDest); } catch (e) {}
         exportDest = null;
         renderFrame(state.currentTime);
@@ -4356,19 +5120,53 @@
         showToast(I18N[state.lang].toastExported);
       };
 
-      // Start playback & MediaRecorder with 250ms timeslice so chunks flush steadily and NEVER stall
+      // Configure volumes & rates at t=0, then start ALL initial media simultaneously and AWAIT .play()
+      // BEFORE starting MediaRecorder so audio, video frames, and captions begin at the EXACT same millisecond!
+      activeVideoClipId = firstClip ? firstClip.id : null;
+      window._playbackSeekGuardUntil = 0;
       tick._stallStart = 0;
+      tick._lastProgTs = 0;
       finishExport._busy = false;
-      startPlayback();
+      lastTs = 0;
+      lastBeatStep = -1;
+      playedSfxIds.clear();
+
+      for (const item of startPlayEls) {
+        if (item.isMain) {
+          const c = item.clip;
+          applyVoiceFxToEl(item.el, c.voiceFx || 'normal', Math.max(0.25, Math.min(4.0, c.speed)));
+          item.el.muted = !!c.muted;
+          item.el.volume = item.el.muted ? 0 : Math.max(0, Math.min(1, (c.volume ?? 1) * state.masterVol));
+        } else if (item.isPip) {
+          item.el.muted = !!item.ov.muted;
+          item.el.volume = item.el.muted ? 0 : Math.max(0, Math.min(1, (item.ov.volume ?? 0.8) * state.masterVol));
+        } else if (item.isAud) {
+          item.el.muted = !!item.a.muted;
+          item.el.volume = item.el.muted ? 0 : Math.max(0, Math.min(1, (item.a.volume ?? 1) * state.masterVol));
+        }
+      }
+
+      await Promise.all(startPlayEls.map(item => item.el.play().catch(() => {})));
+
+      state.currentTime = 0;
+      state.isPlaying = true;
+      document.getElementById('playIcon').textContent = '⏸';
+      renderFrame(0);
       exportStartPerf = performance.now();
-      mediaRecorder.start(250);
+      mediaRecorder.start(200);
+      if (exportVideoTrack && typeof exportVideoTrack.requestFrame === 'function') {
+        try { exportVideoTrack.requestFrame(); } catch (e) {}
+      }
+      rafId = requestAnimationFrame(tick);
     }
 
     function finishExport() {
       if (finishExport._busy) return;
       finishExport._busy = true;
-      // Keep audio/video playing for 350ms tail so the very last syllable & frames are 100% captured!
       renderFrame(exportTotalSec);
+      if (exportVideoTrack && typeof exportVideoTrack.requestFrame === 'function') {
+        try { exportVideoTrack.requestFrame(); } catch (e) {}
+      }
       document.getElementById('exportProgBar').style.width = '100%';
       document.getElementById('exportProgText').textContent = '100%';
       setTimeout(() => {
@@ -4380,7 +5178,7 @@
           try { mediaRecorder.requestData(); } catch (e) {}
           try { mediaRecorder.stop(); } catch (e) {}
         }
-      }, 350);
+      }, 100);
     }
 
     // =========================================
@@ -4586,6 +5384,19 @@
         renderTimeline(); renderFrame(state.currentTime);
         showToast(state.lang === 'ar' ? 'تمت المحاذاة مع المقطع الحالي بدقة!' : 'Aligned to current video clip!');
       };
+      const moveActiveOvToStart = () => {
+        const ov = getSelectedOverlay(); if (!ov) return;
+        pushHistory();
+        ov.start = 0;
+        state.currentTime = 0;
+        syncMediaPlayback(false, 0, true);
+        updatePlayheadUI();
+        renderTimeline();
+        renderFrame(0);
+        showToast(state.lang === 'ar' ? 'تم نقل العنصر لأول الفيديو (0 ثانية)' : 'Moved to start of video (0s)!');
+      };
+      document.getElementById('btnMoveTextStart')?.addEventListener('click', moveActiveOvToStart);
+      document.getElementById('btnMoveLogoStart')?.addEventListener('click', moveActiveOvToStart);
       document.getElementById('btnStretchTextFull')?.addEventListener('click', stretchActiveOvFull);
       document.getElementById('btnStretchLogoFull')?.addEventListener('click', stretchActiveOvFull);
       document.getElementById('btnAlignTextClip')?.addEventListener('click', alignActiveOvToCurrentClip);
@@ -4654,11 +5465,45 @@
 
       document.querySelectorAll('.ratio-chip').forEach(b => b.addEventListener('click', () => { pushHistory(); state.aspectRatio = b.dataset.ratio; updateCanvasSize(); }));
 
-      // Timeline Toolbar
+      // Timeline Toolbar (Manual + Buttons for everything)
+      const seekManualTo = (tVal) => {
+        const clamped = Math.max(0, Math.min(getTotalDuration(), Number(tVal) || 0));
+        state.currentTime = clamped;
+        syncMediaPlayback(state.isPlaying, clamped, true);
+        renderFrame(clamped);
+        updatePlayheadUI();
+      };
       document.getElementById('btnPlayPause').addEventListener('click', () => state.isPlaying ? stopPlayback() : startPlayback());
-      document.getElementById('btnSkipStart').addEventListener('click', () => { state.currentTime = 0; syncMediaPlayback(state.isPlaying, 0, true); renderFrame(0); updatePlayheadUI(); });
+      document.getElementById('btnSkipStart').addEventListener('click', () => seekManualTo(0));
+      document.getElementById('btnStepBack').addEventListener('click', () => { stopPlayback(); seekManualTo(state.currentTime - 1); });
+      document.getElementById('btnStepFwd').addEventListener('click', () => { stopPlayback(); seekManualTo(state.currentTime + 1); });
+      document.getElementById('btnSkipEnd').addEventListener('click', () => { stopPlayback(); seekManualTo(getTotalDuration()); });
+      document.getElementById('btnFitTimeline').addEventListener('click', () => {
+        fitTimelineToScreen();
+        showToast(state.lang === 'ar' ? 'تم ضبط كل الفيديوهات في إطار الشاشة' : 'Timeline fitted to screen!');
+      });
       document.getElementById('btnSnapToggle').addEventListener('click', (e) => { state.snapEnabled = !state.snapEnabled; e.currentTarget.classList.toggle('active', state.snapEnabled); });
-      document.getElementById('rngZoom').addEventListener('input', (e) => { state.zoom = Number(e.target.value); renderTimeline(); });
+      document.getElementById('rngZoom').addEventListener('input', (e) => {
+        state.autoFitTimeline = false;
+        document.getElementById('btnFitTimeline')?.classList.remove('active');
+        state.zoom = Math.max(0.25, Number(e.target.value));
+        renderTimeline();
+      });
+      document.getElementById('btnZoomOut').addEventListener('click', () => {
+        state.autoFitTimeline = false;
+        document.getElementById('btnFitTimeline')?.classList.remove('active');
+        state.zoom = Math.max(0.25, Number((state.zoom * 0.72).toFixed(2)));
+        document.getElementById('rngZoom').value = String(state.zoom);
+        renderTimeline();
+      });
+      document.getElementById('btnZoomIn').addEventListener('click', () => {
+        state.autoFitTimeline = false;
+        document.getElementById('btnFitTimeline')?.classList.remove('active');
+        state.zoom = Math.min(120, Number(Math.max(state.zoom + 1.5, state.zoom * 1.35).toFixed(2)));
+        document.getElementById('rngZoom').value = String(state.zoom);
+        renderTimeline();
+      });
+      window.addEventListener('resize', () => { if (state.autoFitTimeline) fitTimelineToScreen(); });
 
       document.getElementById('btnSplit').addEventListener('click', () => {
         const c = getSelectedVideo(); if (!c) return;
@@ -4701,16 +5546,33 @@
         renderTimeline(); renderFrame(state.currentTime);
       });
 
-      // Ruler scrubbing
+      // Smooth Manual Playhead Dragging (Playhead Handle + Ruler + Empty Track Click)
       const ruler = document.getElementById('tlRuler');
+      const phHandle = document.getElementById('playheadHandle');
       let scrubbing = false;
-      const doScrub = (e) => {
+      const doScrub = (clientX) => {
         const rect = ruler.getBoundingClientRect();
-        state.currentTime = Math.max(0, Math.min(getTotalDuration(), (e.clientX - rect.left) / state.zoom));
-        syncMediaPlayback(false, state.currentTime, true); renderFrame(state.currentTime); updatePlayheadUI();
+        state.currentTime = Math.max(0, Math.min(getTotalDuration(), (clientX - rect.left) / Math.max(0.02, state.zoom)));
+        syncMediaPlayback(false, state.currentTime, true);
+        renderFrame(state.currentTime);
+        updatePlayheadUI();
       };
-      ruler.addEventListener('mousedown', (e) => { stopPlayback(); scrubbing = true; doScrub(e); });
-      window.addEventListener('mousemove', (e) => { if (scrubbing) doScrub(e); });
+      const startScrub = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        stopPlayback();
+        scrubbing = true;
+        doScrub(e.clientX);
+      };
+      ruler.addEventListener('mousedown', startScrub);
+      phHandle?.addEventListener('mousedown', startScrub);
+      ['laneLogo', 'lanePip', 'laneOverlay', 'laneVideo', 'laneAudio'].forEach(laneId => {
+        document.getElementById(laneId)?.addEventListener('mousedown', (e) => {
+          if (e.target.closest('.tl-clip') || e.target.closest('.trans-node')) return;
+          startScrub(e);
+        });
+      });
+      window.addEventListener('mousemove', (e) => { if (scrubbing) doScrub(e.clientX); });
       window.addEventListener('mouseup', () => { scrubbing = false; });
 
       // Speed & Manual Duration
@@ -4776,25 +5638,34 @@
         renderTimeline();
       });
 
-      // Text, Fonts, Captions, Transcript
+      // Text, Fonts, Captions, Transcript (Always adds cleanly at Start 0s so user adjusts it manually!)
       document.getElementById('btnAddText').addEventListener('click', () => {
         pushHistory();
         const total = Math.max(3, getTotalDuration());
-        const startT = Number(Math.min(state.currentTime, Math.max(0, total - 0.5)).toFixed(2));
-        const durT = Number(Math.min(Math.max(2.5, total - startT), Math.max(3.5, total * 0.5)).toFixed(2));
+        const startT = 0;
+        const durT = Number(Math.min(total, Math.max(3.5, Math.min(8, total * 0.5))).toFixed(2));
         const activeTextsCount = state.overlayClips.filter(c => (c.kind === 'text' || c.kind === 'caption') && startT >= c.start && startT <= c.start + c.duration).length;
         const ySlots = [30, 50, 70, 20, 82, 40, 60];
         const smartY = ySlots[activeTextsCount % ySlots.length];
         const ov = { id: genId('ov'), kind: 'text', text: state.lang === 'ar' ? 'اكتب النص هنا' : 'Type text here', fontFamily: 'Cairo', start: startT, duration: durT, x: 50, y: smartY, fontSize: 42, color: '#ffffff', bgColor: '#111827', strokeColor: '#000000', strokeWidth: 0, animation: 'none' };
-        state.overlayClips.push(ov); selectItem('overlay', ov.id); switchInspTab('basic'); renderTimeline(); renderFrame(state.currentTime);
+        state.overlayClips.push(ov);
+        if (state.currentTime > durT - 0.1) {
+          state.currentTime = 0;
+          syncMediaPlayback(false, 0, true);
+          updatePlayheadUI();
+        }
+        selectItem('overlay', ov.id); switchInspTab('basic'); renderTimeline(); renderFrame(state.currentTime);
         openInlineTextEditor(ov);
       });
       document.getElementById('btnAddCaption').addEventListener('click', () => {
         const val = document.getElementById('inpCaptionNew').value.trim(); if (!val) return;
         pushHistory();
-        const ov = { id: genId('ov'), kind: 'caption', text: val, fontFamily: 'Cairo', start: Number(state.currentTime.toFixed(2)), duration: 2.5, x: 50, y: 86, fontSize: 32, color: '#ffffff', bgColor: '#000000', strokeColor: '#000000', strokeWidth: 0, animation: 'fade' };
+        const total = Math.max(2.5, getTotalDuration());
+        const startT = (state.currentTime >= total - 0.5) ? 0 : Number(state.currentTime.toFixed(2));
+        const ov = { id: genId('ov'), kind: 'caption', text: val, fontFamily: 'Cairo', start: startT, duration: Math.min(3.5, total), x: 50, y: 86, fontSize: 32, color: '#ffffff', bgColor: '#000000', strokeColor: '#000000', strokeWidth: 0, animation: 'fade' };
         state.overlayClips.push(ov); document.getElementById('inpCaptionNew').value = '';
-        renderCaptionsList(); selectItem('overlay', ov.id); renderFrame(state.currentTime);
+        if (state.currentTime >= total - 0.5) { state.currentTime = 0; syncMediaPlayback(false, 0, true); updatePlayheadUI(); }
+        renderCaptionsList(); selectItem('overlay', ov.id); renderTimeline(); renderFrame(state.currentTime);
       });
       document.getElementById('btnGenerateFromScript').addEventListener('click', () => {
         const lines = document.getElementById('txtTranscript').value.split('\n').map(s => s.trim()).filter(Boolean); if (!lines.length) return;
